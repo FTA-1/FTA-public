@@ -1,0 +1,15 @@
+{
+  "name": "Forex Trading Academy",
+  "short_name": "FTA",
+  "description": "Professional forex education, audit-trail trading journal and performance stats. Educational use only - not financial advice.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0e1622",
+  "theme_color": "#0e1622",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "icon.svg", "sizes": "512x512", "type": "image/svg+xml", "purpose": "maskable" }
+  ]
+}
