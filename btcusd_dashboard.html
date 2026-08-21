@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>BTCUSD Live Signal Dashboard</title>
+<style>
+:root{--bg:#0d1117;--bg2:#161b22;--border:#30363d;--text:#c9d1d9;--muted:#8b949e;--gold:#f0b90b;--green:#3fb950;--red:#f85149;--blue:#58a6ff;--purple:#8957e5}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;padding:12px;max-width:480px;margin:0 auto;min-height:100vh}
+.header{text-align:center;padding:10px 0 16px;border-bottom:1px solid var(--border);margin-bottom:14px}
+.header h1{font-size:1.15rem;color:var(--gold);letter-spacing:1px}
+.header p{font-size:0.72rem;color:var(--muted);margin-top:4px}
+.signal-box{border-radius:14px;padding:22px;text-align:center;margin-bottom:14px;background:var(--bg2);border:2px solid var(--border);transition:all 0.4s}
+.signal-box.BUY{border-color:#238636;background:rgba(35,134,54,0.12)}
+.signal-box.SELL{border-color:#da3633;background:rgba(218,54,51,0.12)}
+.signal-box.HOLD{border-color:var(--border)}
+.signal-text{font-size:2.4rem;font-weight:900;letter-spacing:2px}
+.signal-box.BUY .signal-text{color:var(--green);text-shadow:0 0 20px rgba(63,185,80,0.4)}
+.signal-box.SELL .signal-text{color:var(--red);text-shadow:0 0 20px rgba(248,81,73,0.4)}
+.signal-box.HOLD .signal-text{color:var(--muted)}
+.signal-reason{font-size:0.78rem;margin-top:8px;color:var(--muted);line-height:1.4}
+.tp-sl-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:14px 0 4px}
+.tp-sl-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center}
+.tp-sl-card .label{font-size:0.68rem;color:var(--muted);text-transform:uppercase}
+.tp-sl-card .value{font-size:1.25rem;font-weight:700;margin-top:4px}
+.tp-sl-card.tp .value{color:var(--green)}
+.tp-sl-card.sl .value{color:var(--red)}
+.tp-sl-card.lot .value{color:var(--blue)}
+#marginWarning{font-size:0.7rem;color:var(--muted);text-align:center;margin-bottom:12px;min-height:14px}
+.section{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:12px}
+.section-title{font-size:0.78rem;color:var(--gold);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:0.68rem;font-weight:600}
+.badge.bull{background:rgba(35,134,54,0.2);color:var(--green)}
+.badge.bear{background:rgba(218,54,51,0.2);color:var(--red)}
+.badge.neut{background:#21262d;color:var(--muted)}
+.row{display:flex;justify-content:space-between;padding:6px 0;font-size:0.83rem;border-bottom:1px solid #21262d}
+.row:last-child{border-bottom:none}
+.row .lbl{color:var(--muted)}
+.row .val{font-weight:600}
+.countdown{text-align:center;font-size:1.8rem;font-weight:800;color:var(--blue);margin:8px 0}
+.btn{width:100%;padding:14px;border:none;border-radius:10px;font-size:0.95rem;font-weight:700;cursor:pointer;margin-top:10px;transition:opacity 0.2s}
+.btn:hover{opacity:0.85}
+.btn-refresh{background:#238636;color:#fff}
+.btn-alert{background:#1f6feb;color:#fff}
+.btn-mode{background:var(--purple);color:#fff}
+.btn-ocr{background:var(--gold);color:#000}
+.input-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.input-grid.three{grid-template-columns:1fr 1fr 1fr}
+input{background:var(--bg);border:1px solid var(--border);color:var(--text);padding:9px;border-radius:8px;font-size:0.85rem;width:100%}
+input:focus{outline:none;border-color:var(--blue)}
+.hidden{display:none !important}
+.pulse{animation:pulse 2s infinite}
+@keyframes pulse{0%{transform:scale(1)}50%{transform:scale(1.03)}100%{transform:scale(1)}}
+.status-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:6px}
+.status-dot.live{background:var(--green);box-shadow:0 0 8px var(--green);animation:blink 1s infinite}
+.status-dot.manual{background:var(--gold);box-shadow:0 0 8px var(--gold)}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0.3}}
+.ocr-status{font-size:0.8rem;color:var(--blue);margin-top:8px;font-weight:600;min-height:20px}
+.ocr-note{font-size:0.7rem;color:var(--muted);margin-top:6px;line-height:1.4}
+.ocr-actions{display:flex;gap:8px;margin-top:10px}
+.ocr-actions .btn{flex:1;margin-top:0;font-size:0.82rem;padding:10px}
+.extracted-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:10px;font-size:0.72rem}
+.extracted-item{background:#0d1117;border:1px solid var(--border);border-radius:6px;padding:6px 8px;display:flex;justify-content:space-between;cursor:pointer}
+.extracted-item .ek{color:var(--muted)}
+.extracted-item .ev{color:var(--green);font-weight:700;font-family:monospace}
+.progress-bar{height:4px;background:var(--border);border-radius:2px;margin-top:10px;overflow:hidden}
+.progress-bar-fill{height:100%;background:var(--gold);width:0%;transition:width 0.3s;border-radius:2px}
+.footer{text-align:center;font-size:0.68rem;color:#484f58;padding:20px 0 40px;line-height:1.5}
+.file-label{display:block;width:100%;padding:14px;background:var(--gold);color:#000;border:none;border-radius:10px;font-size:0.95rem;font-weight:700;cursor:pointer;text-align:center;margin-top:10px}
+.error-box{background:rgba(248,81,73,0.15);border:1px solid var(--red);border-radius:8px;padding:10px;margin-top:10px;font-size:0.78rem;color:var(--red);display:none}
+.subgroup-label{font-size:0.68rem;color:var(--muted);margin-top:10px;margin-bottom:4px;text-transform:uppercase}
+.key-row{display:flex;gap:8px;margin-top:10px}
+.key-row input{flex:1}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>BTCUSD LIVE SIGNAL DASHBOARD</h1>
+  <p>SMC Liquidity Sweep + EMA Trend Rider | M5 candle-close signals</p>
+</div>
+
+<div class="signal-box HOLD" id="signalBox">
+  <div class="signal-text" id="signalText">LOADING...</div>
+  <div class="signal-reason" id="signalReason">Connecting to live gold data...</div>
+</div>
+
+<div class="tp-sl-grid">
+  <div class="tp-sl-card tp"><div class="label">Take Profit</div><div class="value" id="tpValue">--</div></div>
+  <div class="tp-sl-card sl"><div class="label">Stop Loss</div><div class="value" id="slValue">--</div></div>
+  <div class="tp-sl-card lot"><div class="label">Lot Size</div><div class="value" id="lotValue">--</div></div>
+  <div class="tp-sl-card"><div class="label">Risk $</div><div class="value" id="riskValue" style="color:var(--gold);">--</div></div>
+</div>
+<div id="marginWarning"></div>
+
+<div class="section">
+  <div class="section-title">Live Data</div>
+  <div class="row"><span class="lbl">Current Price</span><span class="val" id="curPrice">--</span></div>
+  <div class="row"><span class="lbl">H1 Trend</span><span class="val" id="h1Trend"><span class="badge neut">--</span></span></div>
+  <div class="row"><span class="lbl">M5 EMA Stack</span><span class="val" id="emaStack"><span class="badge neut">--</span></span></div>
+  <div class="row"><span class="lbl">Supertrend (10,3)</span><span class="val" id="stTrendVal"><span class="badge neut">--</span></span></div>
+  <div class="row"><span class="lbl">PDH</span><span class="val" id="pdhVal" style="color:var(--gold);">--</span></div>
+  <div class="row"><span class="lbl">PDL</span><span class="val" id="pdlVal" style="color:var(--gold);">--</span></div>
+  <div class="row"><span class="lbl">Asian High</span><span class="val" id="ashVal" style="color:#ffa500;">--</span></div>
+  <div class="row"><span class="lbl">Asian Low</span><span class="val" id="aslVal" style="color:#ffa500;">--</span></div>
+</div>
+
+<div class="section">
+  <div class="section-title">Strategy Status</div>
+  <div class="row"><span class="lbl">Engine 1 (Sweep+FVG)</span><span class="val" id="eng1Status"><span class="badge neut">WAITING</span></span></div>
+  <div class="row"><span class="lbl">Engine 2 (Trend Rider)</span><span class="val" id="eng2Status"><span class="badge neut">WAITING</span></span></div>
+  <div class="row"><span class="lbl">Last Sweep</span><span class="val" id="sweepStatus">None</span></div>
+  <div class="row"><span class="lbl">Active FVGs</span><span class="val" id="fvgCount">0</span></div>
+  <div class="row"><span class="lbl">Displacement</span><span class="val" id="dispStatus">None</span></div>
+</div>
+
+<div class="section">
+  <div class="section-title">Next M5 Candle Close</div>
+  <div class="countdown" id="countdown">--:--</div>
+  <div style="text-align:center;font-size:0.72rem;color:var(--muted);">Signal auto-recalculates on every 5 min candle close</div>
+</div>
+
+<div class="section">
+  <div class="section-title">Screenshot OCR (best-effort)</div>
+  <div style="font-size:0.72rem;color:var(--muted);margin-bottom:10px;">Upload a chart screenshot that has visible printed price numbers (crosshair box, price axis, watchlist). Tap detected numbers to assign them to the manual candle fields below.</div>
+  <button type="button" class="file-label" id="ocrTrigger" style="border:none;">Choose Screenshot</button>
+  <input type="file" id="ocrFile" accept="image/*" style="display:none">
+  <div class="progress-bar hidden" id="progressBar"><div class="progress-bar-fill" id="progressFill"></div></div>
+  <div class="ocr-status" id="ocrStatus"></div>
+  <div class="error-box" id="errorBox"></div>
+  <div class="extracted-grid hidden" id="extractedGrid"></div>
+  <div class="ocr-note">OCR reads visible printed numbers only — it cannot invent OHLC values a chart doesn't display as text. Always verify assigned values before analyzing.</div>
+</div>
+
+<div class="section">
+  <div class="section-title">Manual Override (3 real candles, no fake data)</div>
+  <div style="font-size:0.72rem;color:var(--muted);margin-bottom:6px;">Enter your last 3 CLOSED M5 candles (oldest → newest) plus known structure levels. This runs Engine 1 (sweep+FVG) only — EMA/H1 trend confirmation needs live data.</div>
+
+  <div class="subgroup-label">Candle -2 (oldest)</div>
+  <div class="input-grid three">
+    <input type="number" step="0.01" id="mc1_o" placeholder="O">
+    <input type="number" step="0.01" id="mc1_h" placeholder="H">
+    <input type="number" step="0.01" id="mc1_l" placeholder="L">
+  </div>
+  <input type="number" step="0.01" id="mc1_c" placeholder="Close" style="margin-top:6px;">
+
+  <div class="subgroup-label">Candle -1</div>
+  <div class="input-grid three">
+    <input type="number" step="0.01" id="mc2_o" placeholder="O">
+    <input type="number" step="0.01" id="mc2_h" placeholder="H">
+    <input type="number" step="0.01" id="mc2_l" placeholder="L">
+  </div>
+  <input type="number" step="0.01" id="mc2_c" placeholder="Close" style="margin-top:6px;">
+
+  <div class="subgroup-label">Candle 0 (last closed)</div>
+  <div class="input-grid three">
+    <input type="number" step="0.01" id="mc3_o" placeholder="O">
+    <input type="number" step="0.01" id="mc3_h" placeholder="H">
+    <input type="number" step="0.01" id="mc3_l" placeholder="L">
+  </div>
+  <input type="number" step="0.01" id="mc3_c" placeholder="Close" style="margin-top:6px;">
+
+  <div class="subgroup-label">Structure levels (optional but recommended)</div>
+  <div class="input-grid">
+    <input type="number" step="0.01" id="m_pdh" placeholder="PDH">
+    <input type="number" step="0.01" id="m_pdl" placeholder="PDL">
+    <input type="number" step="0.01" id="m_ash" placeholder="Asian High">
+    <input type="number" step="0.01" id="m_asl" placeholder="Asian Low">
+  </div>
+
+  <div class="subgroup-label">Account</div>
+  <div class="input-grid three">
+    <input type="number" step="1" id="accBalance" placeholder="Balance $" value="50">
+    <input type="number" step="0.1" id="riskPct" placeholder="Risk %" value="1">
+    <input type="number" step="1" id="leverage" placeholder="Leverage 1:" value="400">
+  </div>
+
+  <button class="btn btn-mode" id="btnManual">ANALYZE MANUAL DATA</button>
+</div>
+
+<div class="section">
+  <div class="section-title">Data Source</div>
+  <div style="font-size:0.72rem;color:var(--muted);">
+    Feed: <b>Binance BTC/USDT</b> — this is the direct, real reference price (not a proxy asset like the gold dashboard needs), needs no signup or key, and Binance's public API is CORS-enabled so it works directly from a browser. Exness quotes BTCUSD off the same underlying market, so basis is normally negligible — but always confirm the exact entry price against your own broker quote before trading.
+  </div>
+  <div class="row" style="margin-top:10px;">
+    <span class="lbl">Status</span>
+    <span class="val"><span class="status-dot manual" id="dataDot"></span><span id="dataStatus">Connecting...</span></span>
+  </div>
+  <button class="btn btn-refresh" id="btnFetch">FORCE REFRESH NOW</button>
+  <button class="btn btn-alert" id="btnAlert">Alert: OFF</button>
+</div>
+
+<div class="section">
+  <div class="section-title">Telegram Notifications</div>
+  <div style="font-size:0.72rem;color:var(--muted);">
+    Sends a message to your own Telegram whenever the signal changes (BUY/SELL/HOLD), so you don't need to keep this tab open and unmuted. Setup: message <b>@BotFather</b> in Telegram → <code>/newbot</code> → copy the token it gives you. Then message <b>@userinfobot</b> to get your numeric Chat ID (or message your new bot once, then check <code>https://api.telegram.org/bot&lt;TOKEN&gt;/getUpdates</code> for the chat id).
+  </div>
+  <div class="input-grid" style="grid-template-columns:1fr;margin-top:10px;">
+    <input type="text" id="tgToken" placeholder="Bot Token (e.g. 123456:ABC-DEF...)">
+  </div>
+  <div class="input-grid" style="grid-template-columns:1fr;margin-top:8px;">
+    <input type="text" id="tgChatId" placeholder="Chat ID (e.g. 987654321)">
+  </div>
+  <label style="display:flex;align-items:center;gap:8px;margin-top:10px;font-size:0.8rem;">
+    <input type="checkbox" id="tgEnabled" style="width:auto;"> Send Telegram alert on signal change
+  </label>
+  <div class="ocr-actions" style="margin-top:10px;">
+    <button class="btn btn-mode" id="tgSave" style="margin-top:0;">Save</button>
+    <button class="btn btn-refresh" id="tgTest" style="margin-top:0;">Send Test Message</button>
+  </div>
+  <div class="ocr-status" id="tgStatus"></div>
+  <div class="ocr-note">Token/Chat ID are saved only in this browser's local storage on your device — never sent anywhere except directly to Telegram's API.</div>
+</div>
+
+<div class="footer">
+BTCUSD Strategy v7.2 (build 2026-08-09-4 (+Supertrend)) | For educational use only<br>
+Live feed is Binance BTC/USDT — the direct reference market, same underlying price Exness quotes from.<br>
+Exness caps BTCUSD at fixed 1:400 leverage / 0.25% margin regardless of your account's forex leverage setting — this dashboard's lot sizing already uses that.<br>
+Signals are generated from real fetched or manually-entered candles only — never simulated or padded data.<br>
+Verify every signal, SL, TP and lot size against your own broker's live quote and contract specs before trading. This is not financial advice.
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.0/dist/tesseract.min.js" onerror="window.__tesseractLoadFailed=true"></script>
+<script>
+'use strict';
+
+window.addEventListener('error', function (e) {
+  var box = document.getElementById('signalReason');
+  if (box) box.textContent = 'Script error: ' + e.message + ' (line ' + e.lineno + '). Buttons may not work until this is fixed — screenshot this message.';
+  var dot = document.getElementById('dataStatus');
+  if (dot) dot.textContent = 'JS error — see message above';
+});
+
+// Immediate proof-of-life: if you never see this text, the script tag itself isn't running
+// in whatever app opened this file (try opening via Chrome's Downloads list instead).
+(function () {
+  var r = document.getElementById('signalReason');
+  if (r) r.textContent = 'Script loaded OK — build 2026-08-09-4 (+Supertrend) — starting fetch...';
+})();
+
+var CONFIG = {
+  emaFast: 8, emaMid: 21, emaSlow: 200,
+  h1Fast: 21, h1Slow: 50,
+  atrPeriod: 14,
+  supertrendPeriod: 10,
+  supertrendMultiplier: 3,
+  riskRewardRatio: 2,
+  contractSizePerLot: 1,     // BTC per standard lot on Exness (BTCUSD, not the 0.01 BTCUSDc cent variant)
+  asianStartUTC: 0, asianEndUTC: 8,
+  refreshMs: 5 * 60 * 1000,
+  fvgLookback: 24,
+  displacementLookback: 15,
+  displacementMultiplier: 1.5
+};
+
+var state = {
+  provider: 'binance',   // 'binance' (free, default) or 'twelvedata' (needs paid key)
+  apiKey: '',
+  m5: [], h1: [], daily: [],
+  alertEnabled: false,
+  lastSignal: null,
+  ocrNumbers: [],
+  ocrAssignIndex: 0,
+  telegram: { token: '', chatId: '', enabled: false }
+};
+
+// ---------- math helpers ----------
+function calcEMA(values, period) {
+  var out = new Array(values.length).fill(null);
+  if (values.length < period) return out;
+  var sum = 0;
+  for (var i = 0; i < period; i++) sum += values[i];
+  out[period - 1] = sum / period;
+  var k = 2 / (period + 1);
+  for (var j = period; j < values.length; j++) {
+    out[j] = values[j] * k + out[j - 1] * (1 - k);
+  }
+  return out;
+}
+
+function calcATR(candles, period) {
+  if (candles.length < period + 1) return null;
+  var trs = [];
+  for (var i = 1; i < candles.length; i++) {
+    var c = candles[i], p = candles[i - 1];
+    trs.push(Math.max(c.high - c.low, Math.abs(c.high - p.close), Math.abs(c.low - p.close)));
+  }
+  var atr = trs.slice(0, period).reduce(function (a, b) { return a + b; }, 0) / period;
+  for (var k = period; k < trs.length; k++) atr = (atr * (period - 1) + trs[k]) / period;
+  return atr;
+}
+
+function calcATRSeries(candles, period) {
+  var n = candles.length;
+  var trs = new Array(n).fill(null);
+  for (var i = 1; i < n; i++) {
+    var c = candles[i], p = candles[i - 1];
+    trs[i] = Math.max(c.high - c.low, Math.abs(c.high - p.close), Math.abs(c.low - p.close));
+  }
+  var atr = new Array(n).fill(null);
+  if (n <= period) return atr;
+  var sum = 0;
+  for (var j = 1; j <= period; j++) sum += trs[j];
+  atr[period] = sum / period;
+  for (var k = period + 1; k < n; k++) atr[k] = (atr[k - 1] * (period - 1) + trs[k]) / period;
+  return atr;
+}
+
+// Classic ATR-based Supertrend(period, multiplier). Returns { trend, line } arrays
+// aligned to candles: trend[i] is 1 (uptrend) / -1 (downtrend) / null (not enough data).
+function calcSupertrend(candles, period, multiplier) {
+  var atr = calcATRSeries(candles, period);
+  var n = candles.length;
+  var upperBand = new Array(n).fill(null);
+  var lowerBand = new Array(n).fill(null);
+  var trend = new Array(n).fill(null);
+  var line = new Array(n).fill(null);
+  for (var i = 0; i < n; i++) {
+    if (atr[i] == null) continue;
+    var hl2 = (candles[i].high + candles[i].low) / 2;
+    var basicUpper = hl2 + multiplier * atr[i];
+    var basicLower = hl2 - multiplier * atr[i];
+    var prevUpper = upperBand[i - 1], prevLower = lowerBand[i - 1];
+    var finalUpper = (prevUpper == null || basicUpper < prevUpper || candles[i - 1].close > prevUpper) ? basicUpper : prevUpper;
+    var finalLower = (prevLower == null || basicLower > prevLower || candles[i - 1].close < prevLower) ? basicLower : prevLower;
+    upperBand[i] = finalUpper;
+    lowerBand[i] = finalLower;
+    var prevTrend = trend[i - 1] || 1;
+    var curTrend;
+    if (prevTrend === 1) curTrend = candles[i].close < finalLower ? -1 : 1;
+    else curTrend = candles[i].close > finalUpper ? 1 : -1;
+    trend[i] = curTrend;
+    line[i] = curTrend === 1 ? finalLower : finalUpper;
+  }
+  return { trend: trend, line: line };
+}
+
+function findFVGs(candles, lookback) {
+  var fvgs = [];
+  var start = Math.max(2, candles.length - lookback);
+  for (var i = start; i < candles.length; i++) {
+    var c1 = candles[i - 2], c3 = candles[i];
+    if (c1.high < c3.low) {
+      var filledB = false;
+      for (var j = i + 1; j < candles.length; j++) if (candles[j].low <= c1.high) { filledB = true; break; }
+      if (!filledB) fvgs.push({ type: 'bullish', top: c3.low, bottom: c1.high, index: i });
+    }
+    if (c1.low > c3.high) {
+      var filledS = false;
+      for (var m = i + 1; m < candles.length; m++) if (candles[m].high >= c1.low) { filledS = true; break; }
+      if (!filledS) fvgs.push({ type: 'bearish', top: c1.low, bottom: c3.high, index: i });
+    }
+  }
+  return fvgs;
+}
+
+function detectSweep(candles, level, direction) {
+  var last = candles[candles.length - 1];
+  if (direction === 'high') return last.high > level && last.close < level;
+  return last.low < level && last.close > level;
+}
+
+function isDisplacement(candles, lookback, mult) {
+  var last = candles[candles.length - 1];
+  var body = Math.abs(last.close - last.open);
+  var slice = candles.slice(Math.max(0, candles.length - lookback - 1), candles.length - 1);
+  if (!slice.length) return false;
+  var avg = slice.reduce(function (a, c) { return a + Math.abs(c.close - c.open); }, 0) / slice.length;
+  return avg > 0 && body > avg * mult;
+}
+
+function badgeHTML(text, cls) { return '<span class="badge ' + cls + '">' + text + '</span>'; }
+
+// ---------- fetch with timeout so a blocked/dropped connection errors out instead of hanging forever ----------
+// Uses a manual timer (not AbortController) because some mobile WebViews don't reliably
+// reject an aborted fetch, which can leave the UI stuck on "Connecting..." forever.
+function fetchWithTimeout(url, ms) {
+  ms = ms || 12000;
+  return new Promise(function (resolve, reject) {
+    var settled = false;
+    var timer = setTimeout(function () {
+      if (settled) return;
+      settled = true;
+      var host = url.split('/')[2] || url;
+      reject(new Error('Timed out after ' + (ms / 1000) + 's reaching ' + host + ' — likely blocked/filtered on this network (carrier content filter, DNS, or VPN). Try WiFi or a different network.'));
+    }, ms);
+    fetch(url).then(function (res) {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      resolve(res);
+    }).catch(function (err) {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      var host = url.split('/')[2] || url;
+      reject(new Error('Network error reaching ' + host + ': ' + err.message));
+    });
+  });
+}
+
+// ---------- data fetching ----------
+// Binance public klines API (no key, CORS-enabled, always free) using BTC/USDT directly —
+// this is the real reference price, not a proxy asset.
+function fetchBinance(interval, limit) {
+  var url = 'https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=' + interval + '&limit=' + limit;
+  return fetchWithTimeout(url, 12000).then(function (res) {
+    if (!res.ok) {
+      return res.json().catch(function () { return {}; }).then(function (j) {
+        throw new Error((j && j.msg) || ('Binance HTTP ' + res.status));
+      });
+    }
+    return res.json();
+  }).then(function (rows) {
+    if (!Array.isArray(rows) || !rows.length) throw new Error('No candle data returned');
+    return rows.map(function (r) {
+      return { time: Math.floor(r[0] / 1000), open: parseFloat(r[1]), high: parseFloat(r[2]), low: parseFloat(r[3]), close: parseFloat(r[4]) };
+    });
+  });
+}
+
+function fetchAll(refreshHigherTF) {
+  updateDataStatus('Fetching live data...', 'manual');
+  var needHigher = refreshHigherTF || state.h1.length === 0 || state.daily.length === 0;
+  var m5p = fetchBinance('5m', 260);
+  var h1p = needHigher ? fetchBinance('1h', 60) : Promise.resolve(null);
+  var dp = needHigher ? fetchBinance('1d', 5) : Promise.resolve(null);
+
+  return Promise.all([m5p, h1p, dp]).then(function (res) {
+    state.m5 = res[0];
+    if (res[1]) state.h1 = res[1];
+    if (res[2]) state.daily = res[2];
+    updateDataStatus('LIVE — Binance BTC/USDT', 'live');
+    runAnalysis();
+  }).catch(function (err) {
+    console.error(err);
+    updateDataStatus('Fetch failed: ' + err.message, 'manual');
+    document.getElementById('signalText').textContent = 'DATA ERROR';
+    document.getElementById('signalReason').textContent = err.message + ' — try Force Refresh again, or use Manual Override below.';
+  });
+}
+
+function updateDataStatus(text, cls) {
+  document.getElementById('dataStatus').textContent = text;
+  document.getElementById('dataDot').className = 'status-dot ' + cls;
+}
+
+// ---------- signal engine (live) ----------
+function runAnalysis() {
+  if (state.m5.length < CONFIG.emaSlow + 5) {
+    document.getElementById('signalText').textContent = 'BUILDING HISTORY';
+    document.getElementById('signalReason').textContent =
+      'Have ' + state.m5.length + ' M5 candles, need ' + (CONFIG.emaSlow + 5) + '+ for EMA200. Increase outputsize or wait for more bars.';
+    return;
+  }
+  var closesM5 = state.m5.map(function (c) { return c.close; });
+  var emaF = calcEMA(closesM5, CONFIG.emaFast);
+  var emaM = calcEMA(closesM5, CONFIG.emaMid);
+  var emaS = calcEMA(closesM5, CONFIG.emaSlow);
+  var i = closesM5.length - 1;
+  var stackBull = emaF[i] > emaM[i] && emaM[i] > emaS[i];
+  var stackBear = emaF[i] < emaM[i] && emaM[i] < emaS[i];
+
+  var h1Trend = 'NEUTRAL';
+  if (state.h1.length >= CONFIG.h1Slow + 2) {
+    var closesH1 = state.h1.map(function (c) { return c.close; });
+    var eF = calcEMA(closesH1, CONFIG.h1Fast), eS = calcEMA(closesH1, CONFIG.h1Slow);
+    var j = closesH1.length - 1;
+    if (eF[j] > eS[j]) h1Trend = 'BULLISH'; else if (eF[j] < eS[j]) h1Trend = 'BEARISH';
+  }
+
+  var pdh = null, pdl = null;
+  if (state.daily.length >= 2) {
+    var prevDay = state.daily[state.daily.length - 2];
+    pdh = prevDay.high; pdl = prevDay.low;
+  }
+
+  var todayStr = new Date().toISOString().slice(0, 10);
+  var asianCandles = state.m5.filter(function (c) {
+    var d = new Date(c.time * 1000);
+    var h = d.getUTCHours();
+    return d.toISOString().slice(0, 10) === todayStr && h >= CONFIG.asianStartUTC && h < CONFIG.asianEndUTC;
+  });
+  var ash = asianCandles.length ? Math.max.apply(null, asianCandles.map(function (c) { return c.high; })) : null;
+  var asl = asianCandles.length ? Math.min.apply(null, asianCandles.map(function (c) { return c.low; })) : null;
+
+  var fvgs = findFVGs(state.m5, CONFIG.fvgLookback);
+  var disp = isDisplacement(state.m5, CONFIG.displacementLookback, CONFIG.displacementMultiplier);
+  var last = state.m5[state.m5.length - 1];
+
+  var levels = [
+    { name: 'PDH', val: pdh, dir: 'high' }, { name: 'PDL', val: pdl, dir: 'low' },
+    { name: 'Asian High', val: ash, dir: 'high' }, { name: 'Asian Low', val: asl, dir: 'low' }
+  ];
+  var sweepDetected = null;
+  for (var s = 0; s < levels.length; s++) {
+    if (levels[s].val && detectSweep(state.m5, levels[s].val, levels[s].dir)) { sweepDetected = levels[s]; break; }
+  }
+
+  var engine1Signal = 'HOLD';
+  if (sweepDetected) {
+    var wantBull = sweepDetected.dir === 'low';
+    var matchFVG = fvgs.find(function (f) { return wantBull ? f.type === 'bullish' : f.type === 'bearish'; });
+    if (matchFVG && disp) engine1Signal = wantBull ? 'BUY' : 'SELL';
+  }
+
+  var stResult = calcSupertrend(state.m5, CONFIG.supertrendPeriod, CONFIG.supertrendMultiplier);
+  var stTrend = stResult.trend[stResult.trend.length - 1];   // 1 = up, -1 = down, null = insufficient data
+  var stLine = stResult.line[stResult.line.length - 1];
+
+  var engine2Signal = 'HOLD';
+  if (stackBull && h1Trend === 'BULLISH' && stTrend === 1) engine2Signal = 'BUY';
+  else if (stackBear && h1Trend === 'BEARISH' && stTrend === -1) engine2Signal = 'SELL';
+
+  var finalSignal = 'HOLD', reason = '';
+  if (engine1Signal !== 'HOLD') {
+    finalSignal = engine1Signal;
+    reason = 'Engine1: sweep of ' + sweepDetected.name + ' (' + sweepDetected.val.toFixed(2) + ') + ' +
+      (finalSignal === 'BUY' ? 'bullish' : 'bearish') + ' FVG + displacement confirmed.';
+  } else if (engine2Signal !== 'HOLD') {
+    finalSignal = engine2Signal;
+    reason = 'Engine2: M5 EMA8/21/200 stack ' + (stackBull ? 'bullish' : 'bearish') + ' + H1 trend (' + h1Trend + ') + Supertrend(' +
+      CONFIG.supertrendPeriod + ',' + CONFIG.supertrendMultiplier + ') ' + (stTrend === 1 ? 'up' : 'down') + ' — triple confluence.';
+  } else if (stackBull !== stackBear && h1Trend !== 'NEUTRAL' && stTrend !== null && !((stackBull && h1Trend === 'BULLISH' && stTrend === 1) || (stackBear && h1Trend === 'BEARISH' && stTrend === -1))) {
+    reason = 'EMA/H1 trend forming but Supertrend disagrees (' + (stTrend === 1 ? 'still up' : 'still down') + ') — waiting for it to flip before Engine2 fires. This filter cuts false trend signals at the cost of entering a bit later.';
+  } else {
+    reason = 'No confluence yet — waiting for a liquidity sweep + FVG, or full EMA/H1/Supertrend trend alignment.';
+  }
+
+  var atr = calcATR(state.m5, CONFIG.atrPeriod);
+  var sizing = computeSizing(finalSignal, last.close, atr, 'accBalance', 'riskPct', 'leverage');
+
+  renderUI({
+    finalSignal: finalSignal, reason: reason, sl: sizing.sl, tp: sizing.tp, lot: sizing.lot,
+    riskAmount: sizing.riskAmount, marginReq: sizing.marginReq, balance: sizing.balance, actualRisk: sizing.actualRisk, minLotForced: sizing.minLotForced,
+    lastClose: last.close, h1Trend: h1Trend, stackBull: stackBull, stackBear: stackBear,
+    pdh: pdh, pdl: pdl, ash: ash, asl: asl, sweepDetected: sweepDetected, fvgs: fvgs,
+    disp: disp, engine1Signal: engine1Signal, engine2Signal: engine2Signal, stTrend: stTrend, stLine: stLine
+  });
+
+  if (finalSignal !== 'HOLD' && finalSignal !== state.lastSignal) {
+    if (state.alertEnabled) playBeep();
+    if (state.telegram.enabled) {
+      var arrow = finalSignal === 'BUY' ? 'UP' : 'DOWN';
+      var msg = arrow + ' ' + finalSignal + ' BTCUSD @ ' + last.close.toFixed(2) +
+        String.fromCharCode(10) + 'SL: ' + (sizing.sl ? sizing.sl.toFixed(2) : '--') + '  TP: ' + (sizing.tp ? sizing.tp.toFixed(2) : '--') + '  Lot: ' + (sizing.lot ? sizing.lot.toFixed(2) : '--') +
+        String.fromCharCode(10) + reason;
+      sendTelegram(msg);
+    }
+  }
+  state.lastSignal = finalSignal;
+}
+
+// ---------- signal engine (manual, 3 real candles only) ----------
+function isDisplacement3(candles) {
+  var last = candles[candles.length - 1];
+  var body = Math.abs(last.close - last.open);
+  var priorBodies = candles.slice(0, -1).map(function (c) { return Math.abs(c.close - c.open); });
+  var avg = priorBodies.reduce(function (a, b) { return a + b; }, 0) / priorBodies.length;
+  return avg > 0 && body > avg * 1.3;
+}
+
+function manualAnalyze() {
+  function g(id) { return parseFloat(document.getElementById(id).value); }
+  var c1 = { open: g('mc1_o'), high: g('mc1_h'), low: g('mc1_l'), close: g('mc1_c') };
+  var c2 = { open: g('mc2_o'), high: g('mc2_h'), low: g('mc2_l'), close: g('mc2_c') };
+  var c3 = { open: g('mc3_o'), high: g('mc3_h'), low: g('mc3_l'), close: g('mc3_c') };
+  var all = [c1, c2, c3];
+  for (var n = 0; n < all.length; n++) {
+    var c = all[n];
+    if (!c.open || !c.high || !c.low || !c.close) { alert('Fill Open, High, Low and Close for all 3 candles — real values only, no placeholders.'); return; }
+  }
+  var pdh = parseFloat(document.getElementById('m_pdh').value) || null;
+  var pdl = parseFloat(document.getElementById('m_pdl').value) || null;
+  var ash = parseFloat(document.getElementById('m_ash').value) || null;
+  var asl = parseFloat(document.getElementById('m_asl').value) || null;
+
+  var candles = [c1, c2, c3];
+  var fvgs = findFVGs(candles, 3);
+  var disp = isDisplacement3(candles);
+  var last = c3;
+
+  var levels = [
+    { name: 'PDH', val: pdh, dir: 'high' }, { name: 'PDL', val: pdl, dir: 'low' },
+    { name: 'Asian High', val: ash, dir: 'high' }, { name: 'Asian Low', val: asl, dir: 'low' }
+  ];
+  var sweepDetected = null;
+  for (var s = 0; s < levels.length; s++) {
+    if (levels[s].val && detectSweep(candles, levels[s].val, levels[s].dir)) { sweepDetected = levels[s]; break; }
+  }
+
+  var engine1Signal = 'HOLD';
+  if (sweepDetected) {
+    var wantBull = sweepDetected.dir === 'low';
+    var matchFVG = fvgs.find(function (f) { return wantBull ? f.type === 'bullish' : f.type === 'bearish'; });
+    if (matchFVG && disp) engine1Signal = wantBull ? 'BUY' : 'SELL';
+  }
+
+  var finalSignal = engine1Signal;
+  var reason = finalSignal !== 'HOLD'
+    ? 'Manual Engine1: sweep of ' + sweepDetected.name + ' + matching FVG + displacement, from your 3 entered candles.'
+    : 'Manual mode only runs Engine1 (sweep+FVG) — no sweep/FVG confluence found in your 3 candles. EMA/H1 trend (Engine2) needs live data.';
+
+  // fallback volatility proxy: range of last candle (NOT a true ATR14 — disclosed to user)
+  var rangeProxy = Math.abs(c3.high - c3.low) || Math.abs(c2.high - c2.low);
+  var sizing = computeSizing(finalSignal, last.close, rangeProxy, 'accBalance', 'riskPct', 'leverage');
+
+  updateDataStatus('MANUAL INPUT — 3 real candles', 'manual');
+  renderUI({
+    finalSignal: finalSignal, reason: reason + (finalSignal !== 'HOLD' ? ' SL/TP use last-candle range as a volatility proxy (not a true ATR14) since only 3 candles were provided.' : ''),
+    sl: sizing.sl, tp: sizing.tp, lot: sizing.lot, riskAmount: sizing.riskAmount, marginReq: sizing.marginReq, balance: sizing.balance, actualRisk: sizing.actualRisk, minLotForced: sizing.minLotForced,
+    lastClose: last.close, h1Trend: 'N/A (manual)', stackBull: false, stackBear: false,
+    pdh: pdh, pdl: pdl, ash: ash, asl: asl, sweepDetected: sweepDetected, fvgs: fvgs,
+    disp: disp, engine1Signal: engine1Signal, engine2Signal: 'HOLD', stTrend: null, stLine: null
+  });
+}
+
+// ---------- position sizing ----------
+function computeSizing(signal, price, volDist, balanceId, riskPctId, leverageId) {
+  var balance = parseFloat(document.getElementById(balanceId).value) || 0;
+  var riskPct = parseFloat(document.getElementById(riskPctId).value) || 0;
+  var leverage = parseFloat(document.getElementById(leverageId) ? document.getElementById(leverageId).value : 0) || 1;
+  var out = { sl: null, tp: null, lot: null, riskAmount: null, marginReq: null, balance: balance, actualRisk: null, minLotForced: false };
+  if (signal === 'HOLD' || !volDist || !price) return out;
+  var slDist = volDist * 1.5;
+  var tpDist = slDist * CONFIG.riskRewardRatio;
+  out.sl = signal === 'BUY' ? price - slDist : price + slDist;
+  out.tp = signal === 'BUY' ? price + tpDist : price - tpDist;
+  out.riskAmount = balance * (riskPct / 100);
+  var rawLot = out.riskAmount / (slDist * CONFIG.contractSizePerLot);
+  out.lot = Math.max(0.01, Math.floor(rawLot * 100) / 100);
+  out.marginReq = (out.lot * CONFIG.contractSizePerLot * price) / leverage;
+  // Actual $ risked at this lot size (may exceed intended risk if the 0.01 min lot is bigger than your risk% allows)
+  out.actualRisk = out.lot * CONFIG.contractSizePerLot * slDist;
+  out.minLotForced = rawLot < 0.01;
+  return out;
+}
+
+// ---------- render ----------
+function renderUI(r) {
+  var box = document.getElementById('signalBox');
+  box.className = 'signal-box ' + r.finalSignal + (r.finalSignal !== 'HOLD' ? ' pulse' : '');
+  document.getElementById('signalText').textContent = r.finalSignal;
+  document.getElementById('signalReason').textContent = r.reason;
+  document.getElementById('tpValue').textContent = r.tp ? r.tp.toFixed(2) : '--';
+  document.getElementById('slValue').textContent = r.sl ? r.sl.toFixed(2) : '--';
+  document.getElementById('lotValue').textContent = r.lot ? r.lot.toFixed(2) : '--';
+  document.getElementById('riskValue').textContent = r.riskAmount ? '$' + r.riskAmount.toFixed(2) : '--';
+  document.getElementById('curPrice').textContent = r.lastClose ? r.lastClose.toFixed(2) : '--';
+  document.getElementById('h1Trend').innerHTML = r.h1Trend === 'BULLISH' ? badgeHTML('BULLISH', 'bull')
+    : r.h1Trend === 'BEARISH' ? badgeHTML('BEARISH', 'bear') : badgeHTML(r.h1Trend || 'NEUTRAL', 'neut');
+  document.getElementById('emaStack').innerHTML = r.stackBull ? badgeHTML('BULLISH', 'bull')
+    : r.stackBear ? badgeHTML('BEARISH', 'bear') : badgeHTML('MIXED/N-A', 'neut');
+  var stEl = document.getElementById('stTrendVal');
+  if (stEl) {
+    stEl.innerHTML = r.stTrend === 1 ? badgeHTML('UP', 'bull') + (r.stLine ? ' ' + r.stLine.toFixed(2) : '')
+      : r.stTrend === -1 ? badgeHTML('DOWN', 'bear') + (r.stLine ? ' ' + r.stLine.toFixed(2) : '')
+      : badgeHTML('N/A', 'neut');
+  }
+  document.getElementById('pdhVal').textContent = r.pdh ? r.pdh.toFixed(2) : '--';
+  document.getElementById('pdlVal').textContent = r.pdl ? r.pdl.toFixed(2) : '--';
+  document.getElementById('ashVal').textContent = r.ash ? r.ash.toFixed(2) : '--';
+  document.getElementById('aslVal').textContent = r.asl ? r.asl.toFixed(2) : '--';
+  document.getElementById('eng1Status').innerHTML = r.engine1Signal !== 'HOLD' ? badgeHTML(r.engine1Signal, r.engine1Signal === 'BUY' ? 'bull' : 'bear') : badgeHTML('WAITING', 'neut');
+  document.getElementById('eng2Status').innerHTML = r.engine2Signal !== 'HOLD' ? badgeHTML(r.engine2Signal, r.engine2Signal === 'BUY' ? 'bull' : 'bear') : badgeHTML('WAITING', 'neut');
+  document.getElementById('sweepStatus').textContent = r.sweepDetected ? (r.sweepDetected.name + ' @ ' + r.sweepDetected.val.toFixed(2)) : 'None';
+  document.getElementById('fvgCount').textContent = r.fvgs ? r.fvgs.length : 0;
+  document.getElementById('dispStatus').textContent = r.disp ? 'Yes' : 'No';
+
+  var warnEl = document.getElementById('marginWarning');
+  if (r.marginReq && r.balance) {
+    var pct = (r.marginReq / r.balance) * 100;
+    var msg = 'Margin required: $' + r.marginReq.toFixed(2) + ' (' + pct.toFixed(0) + '% of balance)';
+    var isWarn = pct > 60;
+    if (r.minLotForced && r.actualRisk && r.riskAmount) {
+      var actualPct = (r.actualRisk / r.balance) * 100;
+      msg += ' | Broker min lot (0.01) forces actual risk to $' + r.actualRisk.toFixed(2) + ' (' + actualPct.toFixed(1) + '% of balance) instead of your requested ' + document.getElementById('riskPct').value + '%';
+      isWarn = true;
+    }
+    if (pct > 60) msg += ' — margin too tight for this balance, reduce risk% or skip this setup.';
+    warnEl.textContent = msg;
+    warnEl.style.color = isWarn ? 'var(--red)' : 'var(--muted)';
+  } else {
+    warnEl.textContent = '';
+  }
+}
+
+// ---------- OCR ----------
+document.getElementById('ocrTrigger').addEventListener('click', function () {
+  document.getElementById('ocrFile').click();
+});
+
+document.getElementById('ocrFile').addEventListener('change', function (e) {
+  var file = e.target.files[0];
+  if (!file) return;
+  var errorBox = document.getElementById('errorBox');
+  errorBox.style.display = 'none';
+  document.getElementById('extractedGrid').classList.add('hidden');
+  document.getElementById('progressBar').classList.remove('hidden');
+  document.getElementById('ocrStatus').textContent = 'Loading OCR engine...';
+
+  if (typeof Tesseract === 'undefined') {
+    document.getElementById('progressBar').classList.add('hidden');
+    errorBox.style.display = 'block';
+    errorBox.textContent = 'OCR library failed to load (this sandbox may block the CDN it uses). Please use the Manual Override fields below instead — they give fully accurate, non-guessed results anyway.';
+    return;
+  }
+
+  document.getElementById('ocrStatus').textContent = 'Reading screenshot...';
+  Tesseract.recognize(file, 'eng', {
+    logger: function (m) {
+      if (m.status === 'recognizing text') {
+        document.getElementById('progressFill').style.width = (m.progress * 100) + '%';
+      }
+    }
+  }).then(function (result) {
+    var text = result.data.text;
+    var matches = text.match(/\d{1,2}[,]?\d{3}\.\d{1,3}|\d{3,5}\.\d{1,3}/g) || [];
+    var nums = matches.map(function (s) { return parseFloat(s.replace(',', '')); })
+      .filter(function (n) { return n > 300 && n < 10000; });
+    state.ocrNumbers = Array.from(new Set(nums)).sort(function (a, b) { return b - a; });
+    document.getElementById('progressBar').classList.add('hidden');
+    if (!state.ocrNumbers.length) {
+      document.getElementById('ocrStatus').textContent = 'No price-like numbers detected. Try a screenshot where prices are printed as text (crosshair box or price scale), or use Manual Override.';
+    } else {
+      document.getElementById('ocrStatus').textContent = 'Found ' + state.ocrNumbers.length + ' possible price value(s). Tap one to assign it to the next candle field (fills O, H, L, C in order for Candle 0).';
+      renderExtracted(state.ocrNumbers);
+      document.getElementById('extractedGrid').classList.remove('hidden');
+    }
+  }).catch(function (err) {
+    document.getElementById('progressBar').classList.add('hidden');
+    errorBox.style.display = 'block';
+    errorBox.textContent = 'OCR failed: ' + err.message + '. Use Manual Override instead.';
+  });
+});
+
+var ocrFieldOrder = ['mc3_o', 'mc3_h', 'mc3_l', 'mc3_c'];
+function renderExtracted(nums) {
+  var grid = document.getElementById('extractedGrid');
+  grid.innerHTML = '';
+  state.ocrAssignIndex = 0;
+  nums.forEach(function (n) {
+    var div = document.createElement('div');
+    div.className = 'extracted-item';
+    div.innerHTML = '<span class="ek">tap to assign</span><span class="ev">' + n.toFixed(2) + '</span>';
+    div.onclick = function () {
+      if (state.ocrAssignIndex < ocrFieldOrder.length) {
+        document.getElementById(ocrFieldOrder[state.ocrAssignIndex]).value = n.toFixed(2);
+        state.ocrAssignIndex++;
+        div.style.opacity = '0.4';
+        div.onclick = null;
+      }
+    };
+    grid.appendChild(div);
+  });
+}
+
+// ---------- countdown + auto-refresh (aligned to real 5-min UTC candle close) ----------
+function msUntilNextBoundary() {
+  var now = Date.now();
+  var five = CONFIG.refreshMs;
+  var next = Math.ceil((now + 3000) / five) * five; // +3s buffer so the closed candle is available
+  return next - now;
+}
+function startCountdown() {
+  setInterval(function () {
+    var ms = msUntilNextBoundary();
+    var totalSec = Math.floor(ms / 1000);
+    var m = Math.floor(totalSec / 60), s = totalSec % 60;
+    document.getElementById('countdown').textContent = String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+  }, 1000);
+}
+function scheduleAutoRefresh() {
+  setTimeout(function () {
+    fetchAll(false);
+    setInterval(function () { fetchAll(false); }, CONFIG.refreshMs);
+  }, msUntilNextBoundary());
+}
+
+// ---------- Telegram notifications ----------
+// Uses a simple GET request (no custom headers) so it never triggers a CORS preflight —
+// this works even against APIs that don't send Access-Control-Allow-Origin, since the
+// browser still delivers the request; we just may not always be able to read the response.
+function loadTelegramSettings() {
+  try {
+    var raw = localStorage.getItem('btcDashboard_telegram');
+    if (raw) {
+      var saved = JSON.parse(raw);
+      state.telegram.token = saved.token || '';
+      state.telegram.chatId = saved.chatId || '';
+      state.telegram.enabled = !!saved.enabled;
+    }
+  } catch (e) { /* localStorage unavailable — settings just won't persist between sessions */ }
+  document.getElementById('tgToken').value = state.telegram.token;
+  document.getElementById('tgChatId').value = state.telegram.chatId;
+  document.getElementById('tgEnabled').checked = state.telegram.enabled;
+}
+
+function saveTelegramSettings(showStatus) {
+  state.telegram.token = document.getElementById('tgToken').value.trim();
+  state.telegram.chatId = document.getElementById('tgChatId').value.trim();
+  state.telegram.enabled = document.getElementById('tgEnabled').checked;
+  try {
+    localStorage.setItem('btcDashboard_telegram', JSON.stringify(state.telegram));
+  } catch (e) { /* ignore — will just need re-entering next time */ }
+  if (showStatus) document.getElementById('tgStatus').textContent = 'Saved.';
+}
+
+function sendTelegram(text) {
+  if (!state.telegram.token || !state.telegram.chatId) return Promise.resolve(false);
+  var url = 'https://api.telegram.org/bot' + encodeURIComponent(state.telegram.token) +
+    '/sendMessage?chat_id=' + encodeURIComponent(state.telegram.chatId) + '&text=' + encodeURIComponent(text);
+  return fetch(url).then(function (res) {
+    return res.json().then(function (j) { return !!j.ok; }).catch(function () { return true; });
+  }).catch(function () {
+    return fetch(url, { mode: 'no-cors' }).then(function () { return null; }).catch(function () { return false; });
+  });
+}
+
+document.getElementById('tgSave').addEventListener('click', function () { saveTelegramSettings(true); });
+document.getElementById('tgTest').addEventListener('click', function () {
+  saveTelegramSettings(false);
+  document.getElementById('tgStatus').textContent = 'Sending test message...';
+  sendTelegram('Test alert from BTCUSD dashboard - Telegram notifications are wired up correctly.').then(function (ok) {
+    document.getElementById('tgStatus').textContent = ok === true ? 'Sent — check Telegram.'
+      : ok === null ? 'Request sent, but could not confirm delivery (browser CORS) — check Telegram to verify.'
+      : 'Failed — double check your Bot Token and Chat ID.';
+  });
+});
+
+function playBeep() {
+  try {
+    var ctx = new (window.AudioContext || window.webkitAudioContext)();
+    var o = ctx.createOscillator(), g = ctx.createGain();
+    o.connect(g); g.connect(ctx.destination);
+    o.frequency.value = 880; g.gain.value = 0.15;
+    o.start();
+    setTimeout(function () { o.stop(); ctx.close(); }, 300);
+  } catch (e) { /* audio not available, ignore */ }
+}
+
+function toggleAlert() {
+  state.alertEnabled = !state.alertEnabled;
+  document.getElementById('btnAlert').textContent = 'Alert: ' + (state.alertEnabled ? 'ON' : 'OFF');
+}
+
+// ---------- wire up ----------
+document.getElementById('btnFetch').addEventListener('click', function () { fetchAll(true); });
+document.getElementById('btnManual').addEventListener('click', manualAnalyze);
+document.getElementById('btnAlert').addEventListener('click', toggleAlert);
+loadTelegramSettings();
+startCountdown();
+
+// Auto-connect immediately using the free Binance feed — no key needed to see live signals.
+fetchAll(true).then(function () { scheduleAutoRefresh(); });
+</script>
+</body>
+</html>
