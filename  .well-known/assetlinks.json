@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "com.fta.academy",
+        "sha256_cert_fingerprints": ["8E:3E:54:9C:E7:69:D3:89:BD:8A:CF:C3:7F:B6:B6:1E:15:76:53:EB:C0:A5:1E:58:B3:2C:08:1C:72:8D:15:A1"]
+      }
+    }]
