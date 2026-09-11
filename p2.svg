@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 420" font-family="Arial,sans-serif">
+<rect width="800" height="420" fill="#0e1622"/>
+<text x="24" y="40" fill="#f6b516" font-size="24" font-weight="bold">ASCENDING TRIANGLE — RESPECT OR BREAK</text>
+<line x1="60" y1="140" x2="470" y2="140" stroke="#ef5350" stroke-width="3"/>
+<text x="60" y="125" fill="#ef5350" font-size="15">FLAT RESISTANCE</text>
+<line x1="60" y1="340" x2="470" y2="180" stroke="#2ecc8f" stroke-width="3"/>
+<text x="60" y="368" fill="#2ecc8f" font-size="15">RISING SUPPORT</text>
+<polyline points="70,330 150,145 210,290 290,145 340,250 420,145 455,205 560,80" fill="none" stroke="#f2f5f9" stroke-width="5" stroke-linejoin="round"/>
+<polygon points="560,80 546,106 574,106" fill="#2ecc8f"/>
+<text x="520" y="130" fill="#2ecc8f" font-size="16" font-weight="bold">UPTREND: breakout above</text>
+<polygon points="480,215 468,190 492,190" fill="#ef5350"/>
+<text x="520" y="228" fill="#ef5350" font-size="16" font-weight="bold">DOWNTREND: break below = trap</text>
+<text x="24" y="400" fill="#8b9bb4" font-size="15">Same shape, opposite meaning — the trend context decides the play.</text>
+</svg>

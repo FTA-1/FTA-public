@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 420" font-family="Arial,sans-serif">
+<rect width="800" height="420" fill="#0e1622"/>
+<text x="24" y="40" fill="#f6b516" font-size="24" font-weight="bold">REVERSAL — DOUBLE BOTTOM (W)</text>
+<polyline points="40,100 150,300 230,210 330,300 430,190 500,230 640,90" fill="none" stroke="#f2f5f9" stroke-width="5" stroke-linejoin="round"/>
+<line x1="100" y1="305" x2="380" y2="305" stroke="#f6b516" stroke-width="3"/>
+<text x="100" y="332" fill="#f6b516" font-size="16">SUPPORT — two equal lows</text>
+<line x1="230" y1="210" x2="470" y2="210" stroke="#8b9bb4" stroke-width="2" stroke-dasharray="8 6"/>
+<text x="480" y="205" fill="#8b9bb4" font-size="15">NECKLINE</text>
+<polygon points="430,190 418,220 442,220" fill="#2ecc8f"/>
+<text x="450" y="248" fill="#2ecc8f" font-size="17" font-weight="bold">ENTRY: neckline break</text>
+<text x="24" y="400" fill="#8b9bb4" font-size="15">Downtrend + two equal lows + neckline break = reversal attempt. Stop below support.</text>
+</svg>

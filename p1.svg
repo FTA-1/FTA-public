@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 420" font-family="Arial,sans-serif">
+<rect width="800" height="420" fill="#0e1622"/>
+<text x="24" y="40" fill="#f6b516" font-size="24" font-weight="bold">TREND CONTINUATION — PULLBACK ENTRY</text>
+<polyline points="40,360 140,240 220,300 320,180 400,285 520,120 600,180 740,60" fill="none" stroke="#f2f5f9" stroke-width="5" stroke-linejoin="round"/>
+<line x1="180" y1="292" x2="470" y2="292" stroke="#f6b516" stroke-width="3" stroke-dasharray="10 6"/>
+<text x="180" y="320" fill="#f6b516" font-size="16">RISING SUPPORT (higher lows)</text>
+<text x="300" y="165" fill="#8b9bb4" font-size="15">HH</text>
+<text x="500" y="105" fill="#8b9bb4" font-size="15">HH</text>
+<text x="205" y="322" fill="#8b9bb4" font-size="15">HL</text>
+<polygon points="400,285 388,315 412,315" fill="#2ecc8f"/>
+<text x="418" y="332" fill="#2ecc8f" font-size="17" font-weight="bold">ENTRY: pullback holds support</text>
+<text x="24" y="400" fill="#8b9bb4" font-size="15">Uptrend = higher highs + higher lows. Wait for the pullback, enter at the bounce.</text>
+</svg>
