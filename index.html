@@ -1234,8 +1234,23 @@ if(location.protocol!=='https:'){
  dv.innerHTML='🧪 <b>DEV TEST (local file only)</b><br><button class="btn outline" style="margin-top:8px" onclick="S.pro=true;S.ult=true;S.tier=\'ult\';save();location.reload()">UNLOCK EVERYTHING FOR TESTING</button> <button class="btn outline" style="margin-top:8px" onclick="S.pro=false;S.ult=false;S.tier=\'free\';save();location.reload()">BACK TO FREE</button>';
  const ss=$('s-settings');if(ss)ss.insertBefore(dv,ss.querySelector('.devcard'));
 }
+  /* ---- ACCOUNT CURRENCY ---- */
+S.cur=S.cur||'USD';S.rate=S.rate||1;
+const _st=saveTrade;saveTrade=function(){const n=S.trades.length;const r=_st();const t=S.trades[S.trades.length-1];if(t&&S.trades.length>n){const v=t.versions[t.versions.length-1];if(v){v.cur=S.cur||'USD';v.rate=S.rate||1}}return r};
+(function(){const ss=$('s-settings');if(!ss)return;const d=document.createElement('div');d.className='devcard';d.style.margin='16px';
+d.innerHTML='💱 <b>ACCOUNT CURRENCY</b><br><select id="f_cur" style="margin-top:8px;padding:10px;border-radius:10px;background:#1f2b3e;color:#f2f5f9;border:1px solid #33415a"><option>USD</option><option>ZAR</option><option>EUR</option><option>GBP</option></select> <input id="f_rate" style="width:110px;margin-top:8px;padding:10px;border-radius:10px;background:#1f2b3e;color:#f2f5f9;border:1px solid #33415a" inputmode="decimal" placeholder="1 USD =">';
+ss.insertBefore(d,ss.querySelector('.devcard'));
+const sel=$('f_cur'),rt=$('f_rate');sel.value=S.cur;rt.value=(S.rate===1?'':S.rate);
+sel.onchange=function(){S.cur=sel.value;if(S.cur==='USD')S.rate=1;save();toast('Account currency: '+S.cur)};
+rt.onchange=function(){const v=parseFloat(rt.value);S.rate=(S.cur==='USD')?1:(isFinite(v)&&v>0?v:1);save();toast('Rate saved: 1 USD = '+S.rate)};})();
   
 /* ---------- SYSTEM ---------- */
+  /* ---- REVIEWER ACCESS CODE ---- */
+if(S.rev){S.pro=true;S.ult=true;S.tier='ult';save();}
+setInterval(function(){if(S.rev&&(S.tier!=='ult'||!S.pro)){S.pro=true;S.ult=true;S.tier='ult';save();}},2000);
+(function(){var n=0;const el=$('s-settings');if(!el)return;
+el.insertAdjacentHTML('beforeend','<p id="revtap" class="sub" style="padding:8px 16px;opacity:.35">v1.0.0 build 1</p>');
+el.addEventListener('click',function(e){if(e.target&&e.target.id==='revtap'){n++;if(n>=7){n=0;var c=prompt('Reviewer access code:');if(c==='FTA-GR-8842-2026'){S.rev=true;S.pro=true;S.ult=true;S.tier='ult';save();toast('Reviewer access granted');location.reload()}}}},true);})();
 function resetAll(){S={done:[],pro:false,ult:false,tier:'free',points:0,trades:[],scores:{},escores:{},epass:[]};save();renderAcademy();toast('Progress reset')}
 go('academy');
 </script>
@@ -1247,8 +1262,8 @@ function calcPL(){var pair=(val('f_pair')||'').toUpperCase(),lots=parseFloat(val
  var units=lots*contractSize(pair),pl=(c-o)*units*(curDir==='BUY'?1:-1);
  var b=pair.split('/')[0]||'',q=pair.split('/')[1]||'';
  if(q==='JPY'||b==='USD')pl=pl/c;
- pl=Math.round(pl*100)/100;
- if(el){el.textContent='Calculated P/L: '+(pl>=0?'+':'-')+'$'+Math.abs(pl).toFixed(2);el.style.color=pl>=0?'#2ecc8f':'#ef5350'}
+ pl=Math.round(pl*(S.rate||1)*100)/100;
+ if(el){el.textContent='Calculated P/L: '+(pl>=0?'+':'-')+(S.cur==='USD'?'$':S.cur+' ')+Math.abs(pl).toFixed(2);el.style.color=pl>=0?'#2ecc8f':'#ef5350'}
  return pl}
 function validate(){var req=['f_ref','f_pair','f_lots','f_open','f_close','f_ot','f_ct','f_tp','f_sl','f_pl'];
  var ok=req.every(function(id){return val(id)!==''})&&['f_lots','f_open','f_close','f_tp','f_sl','f_pl'].every(function(id){return isFinite(parseFloat(val(id)))});
