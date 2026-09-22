@@ -3,7 +3,7 @@
       "target": {
         "namespace": "android_app",
         "package_name": "com.fta.academy",
-        "sha256_cert_fingerprints": ["8E:3E:54:9C:E7:69:D3:89:BD:8A:CF:C3:7F:B6:B6:1E:15:76:53:EB:C0:A5:1E:58:B3:2C:08:1C:72:8D:15:A1","5F:F7:80:06:BD:E0:EF:9C:BA:AD:FE:54:09:01:B6:FF:7C:E9:F0:F6:A3:90:DF:CD:D3:5E:AB:92:0D:77:32:EB"]
+        "sha256_cert_fingerprints": ["8E:3E:54:9C:E7:69:D3:89:BD:8A:CF:C3:7F:B6:B6:1E:15:76:53:EB:C0:A5:1E:58:B3:2C:08:1C:72:8D:15:A1","FF:EA:8C:42:B8:60:32:C9:1A:C0:38:49:B1:FA:0F:D6:B1:20:AF:78:44:C9:18:F8:91:91:FB:85:BA:C5:0F:3A"]
       }
     }]
 
