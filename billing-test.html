@@ -26,11 +26,17 @@ async function run(){
 async function buy(){
   const o=[document.getElementById('out').textContent,''];
   try{
-    if(!svc){ svc = await window.getDigitalGoodsService('https://play.google.com/billing'); }
-    o.push('calling purchase...');
+    o.push('calling PaymentRequest...');
     log(o.join('\n'));
-    const p = await svc.purchase({ id:'pro_monthly' });
-    o.push('PURCHASE OK token: '+ (p&&p.purchaseToken? p.purchaseToken.slice(0,12)+'...':'(no token)'));
+    const request = new PaymentRequest([{
+      supportedMethods: 'https://play.google.com/billing',
+      data: { sku: 'pro_monthly' }
+    }]);
+    const response = await request.show();
+    const token = response.details && response.details.purchaseToken;
+    o.push('PURCHASE OK token: '+ (token? token.slice(0,16)+'...':'(none)'));
+    if(response.complete){ await response.complete('success'); }
+    if(svc && token){ try{ await svc.acknowledge(token); o.push('acknowledged'); }catch(e2){ o.push('ack error: '+e2.message); } }
   }catch(e){
     o.push('PURCHASE ERROR: '+ (e&&e.message? e.message : String(e)));
   }
