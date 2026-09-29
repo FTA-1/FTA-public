@@ -79,8 +79,31 @@ canvas{display:none}
 </style>
 </head>
 <body>
-  <a href="billing-test.html" style="color:#4a8cff;background:#0d1424;padding:10px;display:block;text-align:center;font-size:16px">Billing diagnostics</a>
-
+  <script>
+(function(){
+  var orig = window.getDigitalGoodsService;
+  if(!orig){ return; }
+  window.getDigitalGoodsService = function(){
+    return orig.apply(this, arguments).then(function(svc){
+      if(svc && !svc.purchase){
+        svc.purchase = function(opts){
+          var sku = (typeof opts === 'string') ? opts : (opts && opts.id);
+          var pr = new PaymentRequest([{ supportedMethods: 'https://play.google.com/billing', data: { sku: sku } }]);
+          return pr.show().then(function(resp){
+            var tok = resp.details && resp.details.purchaseToken;
+            var done = resp.complete ? resp.complete('success').catch(function(){}) : Promise.resolve();
+            return done.then(function(){
+              if(tok){ return svc.acknowledge(tok).catch(function(){}).then(function(){ return { purchaseToken: tok, itemId: sku }; }); }
+              return { itemId: sku };
+            });
+          });
+        };
+      }
+      return svc;
+    });
+  };
+})();
+  </script>
 <div id="s-dash" class="screen">
  <div class="lhead"><h1>Welcome to Forex Trading Academy</h1>
  <div class="sub" style="color:var(--gold);font-weight:700">guest trader • <span id="d_tier">Free</span></div>
