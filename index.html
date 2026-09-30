@@ -1218,7 +1218,7 @@ async function buyViaPlay(pid){
   const res=await req.show();
   const token=res.details.purchaseToken;
   await res.complete('success');
-  try{ if(pid==='lifetime_pro'){await svc.consume(token);}else{await svc.acknowledge(token);}
+  try{ if(pid==='lifetime_pro'){await svc.consume(token);}else{await svc.acknowledge(token);}}catch(e){}
   if(pid==='ultimate_monthly'){S.pro=true;S.ult=true;S.tier='ult'}
   else if(pid==='pro_monthly'){S.pro=true;S.ult=false;S.tier='pro'}
   else{S.pro=true;S.ult=false;S.tier='life'}
