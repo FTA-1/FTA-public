@@ -1212,13 +1212,13 @@ async function buyViaPlay(pid){
  try{
   if(!window.getDigitalGoodsService){toast('📲 Subscriptions activate in the Play Store version');return}
   const svc=await window.getDigitalGoodsService('https://play.google.com/billing');
-  const det=await svc.getItemDetails([pid]);
+  const det=await svc.getDetails([pid]);
   if(!det||!det.length){toast('⏳ Product not live yet — try after launch');return}
-  const req=new PaymentRequest([{supportedMethods:'https://play.google.com/billing',data:{sku:pid,skuType:pid==='lifetime_pro'?'inapp':'subs',price:det[0].price}}]);
+  const req=new PaymentRequest([{supportedMethods:'https://play.google.com/billing',data:{sku:pid}}]);
   const res=await req.show();
   const token=res.details.purchaseToken;
   await res.complete('success');
-  try{await svc.acknowledgePurchase(token)}catch(e){}
+  try{ if(pid==='lifetime_pro'){await svc.consume(token);}else{await svc.acknowledge(token);}
   if(pid==='ultimate_monthly'){S.pro=true;S.ult=true;S.tier='ult'}
   else if(pid==='pro_monthly'){S.pro=true;S.ult=false;S.tier='pro'}
   else{S.pro=true;S.ult=false;S.tier='life'}
