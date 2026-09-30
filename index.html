@@ -1,6 +1,40 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <script>
+(function(){
+  var d=document.createElement('div');
+  d.style.cssText='position:fixed;right:6px;bottom:64px;z-index:9999;background:#111a2e;color:#7fd28a;font:11px monospace;padding:6px 8px;border-radius:8px;max-width:70vw;white-space:pre-wrap';
+  d.textContent='SHIM v2 loaded';
+  function put(){ if(document.body){ document.body.appendChild(d); } else { setTimeout(put,200); } }
+  put();
+  function log(t){ d.textContent=t; }
+  var orig=window.getDigitalGoodsService;
+  if(!orig){ log('SHIM v2: no getDigitalGoodsService!'); return; }
+  window.getDigitalGoodsService=function(){
+    return orig.apply(this,arguments).then(function(svc){
+      if(svc && !svc.purchase){
+        svc.purchase=function(opts){
+          var sku=(typeof opts==='string')?opts:(opts&&(opts.id||opts.itemId||opts.sku));
+          log('SHIM purchase sku='+sku);
+          if(!sku){ return Promise.reject(new Error('no sku in opts: '+JSON.stringify(opts))); }
+          var pr=new PaymentRequest([{supportedMethods:'https://play.google.com/billing',data:{sku:sku}}]);
+          return pr.show().then(function(resp){
+            var tok=resp.details&&resp.details.purchaseToken;
+            var done=resp.complete?resp.complete('success').catch(function(){}):Promise.resolve();
+            return done.then(function(){
+              if(tok){ return svc.acknowledge(tok).catch(function(){}).then(function(){ log('SHIM OK '+sku); return {purchaseToken:tok,itemId:sku}; }); }
+              log('SHIM OK no-token '+sku);
+              return {itemId:sku};
+            });
+          }).catch(function(e){ log('SHIM show error: '+(e&&e.message?e.message:e)); throw e; });
+        };
+      }
+      return svc;
+    });
+  };
+})();
+  </script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Forex Trading Academy</title>
@@ -79,30 +113,7 @@ canvas{display:none}
 </style>
 </head>
 <body>
-  <script>
-(function(){
-  var orig = window.getDigitalGoodsService;
-  if(!orig){ return; }
-  window.getDigitalGoodsService = function(){
-    return orig.apply(this, arguments).then(function(svc){
-      if(svc && !svc.purchase){
-        svc.purchase = function(opts){
-          var sku = (typeof opts === 'string') ? opts : (opts && opts.id);
-          var pr = new PaymentRequest([{ supportedMethods: 'https://play.google.com/billing', data: { sku: sku } }]);
-          return pr.show().then(function(resp){
-            var tok = resp.details && resp.details.purchaseToken;
-            var done = resp.complete ? resp.complete('success').catch(function(){}) : Promise.resolve();
-            return done.then(function(){
-              if(tok){ return svc.acknowledge(tok).catch(function(){}).then(function(){ return { purchaseToken: tok, itemId: sku }; }); }
-              return { itemId: sku };
-            });
-          });
-        };
-      }
-      return svc;
-    });
-  };
-})();
+  
   </script>
 <div id="s-dash" class="screen">
  <div class="lhead"><h1>Welcome to Forex Trading Academy</h1>
