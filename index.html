@@ -1174,7 +1174,8 @@ function activate(){
  if(selPlan==='free'){S.pro=false;S.ult=false;S.tier='free';save();if($('tier'))$('tier').textContent=tierName();toast('Switched to Free tier');go('dash');return}
  const pid=selPlan==='pro'?'pro_monthly':(selPlan==='ult'?'ultimate_monthly':'lifetime_pro');
  buyViaPlay(pid)}
-async function buyViaPlay(pid){
+window.S=S; window.save=save; window.tierName=tierName; window.go=go;
+  async function buyViaPlay(pid){
  try{
   if(!window.getDigitalGoodsService){toast('📲 Subscriptions activate in the Play Store version');return}
   const svc=await window.getDigitalGoodsService('https://play.google.com/billing');
