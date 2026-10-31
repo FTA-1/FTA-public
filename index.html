@@ -1289,13 +1289,12 @@ function drawEquity(){var old=document.querySelectorAll('.eqsvg');for(var i=0;i<
  for(var i=0;i<all.length;i++){var el=all[i];
   if(el.childElementCount===0&&el.textContent.trim()==='Equity Curve'){el.insertAdjacentHTML('afterend',eqSVG())}}}
 var _show2=show;show=function(n){_show2(n);drawEquity()};
-  </script>
-<!-- FTA AUTH v1.4 (Supabase) — cloud login + cloud tier sync -->
+<!-- FTA AUTH v1.5 (Supabase) — cloud login + tier + journal sync -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script>
 (function(){
   if(!window.supabase){ return; }
-  var sb = supabase.createClient('https://vgsacqpxoejjolftqgod.supabase.co','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZnc2FjcXB4b2Vqam9sZnRxZ29kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTExNDE1NjIsImV4cCI6MjEwNjcxNzU2Mn0.vWUj524y8rWIV0VN3pNlYMztaGlt4s1Nqy4ZJ0-n-7s');
+  var sb = supabase.createClient('PASTE-YOUR-PROJECT-URL','PASTE-YOUR-ANON-KEY');
   window.FTA_SB = sb;
   function el(id){ return document.getElementById(id); }
   function toast(t){
@@ -1306,6 +1305,7 @@ var _show2=show;show=function(n){_show2(n);drawEquity()};
     setTimeout(function(){ d.remove(); },3500);
   }
   function hasApp(){ return (typeof window.S!=='undefined') && (typeof window.save==='function'); }
+  function setPad(on){ document.body.style.paddingTop = on?'48px':''; }
   function setLocalTier(t){
     if(!hasApp()){ return false; }
     if(t==='pro'||t==='ultimate'||t==='lifetime'){
@@ -1325,6 +1325,43 @@ var _show2=show;show=function(n){_show2(n);drawEquity()};
       var ok=!exp || (new Date(exp).getTime()>Date.now());
       var applied=setLocalTier(ok?t:'free');
       if(!applied && (t==='pro'||t==='ultimate'||t==='lifetime')){ toast('Tier sync unavailable — report to dev'); }
+    });
+  }
+  var lastSyncJSON='';
+  var pollerOn=false;
+  function upsertTrades(list,uid,announce){
+    if(!hasApp()){ return; }
+    if(!list||!list.length){ lastSyncJSON=JSON.stringify(S.trades||[]); return; }
+    var rows=list.map(function(t){ return {user_id:uid, app_id:t.id, payload:t, updated_at:new Date().toISOString()}; });
+    sb.from('trades').upsert(rows,{onConflict:'user_id,app_id'}).then(function(r){
+      if(r.error){ toast('Cloud sync error: '+r.error.message); return; }
+      lastSyncJSON=JSON.stringify(S.trades||[]);
+      if(announce){ toast('Cloud journal: '+rows.length+' trade(s) secured'); }
+    });
+  }
+  function cloudBoot(uid){
+    sb.from('trades').select('app_id,payload').eq('user_id',uid).then(function(r){
+      if(r.error||!hasApp()){ return; }
+      S.trades=S.trades||[];
+      var cloud=r.data||[], byId={};
+      cloud.forEach(function(row){ byId[row.app_id]=row; });
+      var added=false;
+      cloud.forEach(function(row){
+        if(row.payload && !S.trades.some(function(t){ return t.id===row.app_id; })){ S.trades.push(row.payload); added=true; }
+      });
+      S.trades=S.trades.map(function(t){ return (byId[t.id]&&byId[t.id].payload)?byId[t.id].payload:t; });
+      if(added){ save(); }
+      lastSyncJSON=JSON.stringify(S.trades||[]);
+      var missing=S.trades.filter(function(t){ return !byId[t.id]; });
+      if(missing.length){ upsertTrades(missing,uid,true); }
+      if(!pollerOn){
+        pollerOn=true;
+        setInterval(function(){
+          if(!hasApp()||!window.FTA_USER){ return; }
+          var j=JSON.stringify(S.trades||[]);
+          if(j!==lastSyncJSON){ upsertTrades(S.trades,uid,false); }
+        },4000);
+      }
     });
   }
   var box=document.createElement('div');
@@ -1353,17 +1390,19 @@ var _show2=show;show=function(n){_show2(n);drawEquity()};
   document.body.insertBefore(pill, document.body.firstChild);
   function showBox(v){ box.style.display=v?'block':'none'; }
   function msg(t){ el('ftaAuthMsg').textContent=t; }
-  function dismiss(){ showBox(false); banner.style.display='none'; }
-  function showPill(email){ el('ftaAuthWho').textContent='☁️ '+email; pill.style.display='block'; banner.style.display='none'; }
+  function dismiss(){ showBox(false); banner.style.display='none'; setPad(false); }
+  function showPill(email){ el('ftaAuthWho').textContent='☁️ '+email; pill.style.display='block'; banner.style.display='none'; setPad(true); }
   function hidePill(){ pill.style.display='none'; }
   sb.auth.getSession().then(function(r){
     if(r.data && r.data.session){
       window.FTA_USER=r.data.session.user;
       showPill(r.data.session.user.email);
       syncTier(r.data.session.user.id);
+      cloudBoot(r.data.session.user.id);
     } else {
       setLocalTier('free');
       banner.style.display='block';
+      setPad(true);
     }
   });
   el('ftaAuthOpen').onclick=function(){ showBox(true); msg('Cloud save (beta): sign in so your journal survives any device.'); };
@@ -1371,7 +1410,7 @@ var _show2=show;show=function(n){_show2(n);drawEquity()};
   el('ftaSignOut').onclick=function(){
     sb.auth.signOut().then(function(){
       window.FTA_USER=null; hidePill(); setLocalTier('free');
-      banner.style.display='block'; toast('Signed out.');
+      banner.style.display='block'; setPad(true); toast('Signed out.');
     });
   };
   el('ftaSignUp').onclick=function(){
@@ -1383,7 +1422,7 @@ var _show2=show;show=function(n){_show2(n);drawEquity()};
     sb.auth.signUp({email:email,password:pass,options:{data:{full_name:name}}}).then(function(r){
       if(r.error){ msg('Signup failed: '+r.error.message); return; }
       window.FTA_USER=r.data.user;
-      dismiss(); showPill(email); syncTier(r.data.user.id); toast('Account created — signed in as '+email);
+      dismiss(); showPill(email); syncTier(r.data.user.id); cloudBoot(r.data.user.id); toast('Account created — signed in as '+email);
     });
   };
   el('ftaSignIn').onclick=function(){
@@ -1393,11 +1432,11 @@ var _show2=show;show=function(n){_show2(n);drawEquity()};
     sb.auth.signInWithPassword({email:email,password:pass}).then(function(r){
       if(r.error){ msg('Sign-in failed: '+r.error.message); return; }
       window.FTA_USER=r.data.user;
-      dismiss(); showPill(r.data.user.email); syncTier(r.data.user.id); toast('Welcome back, '+r.data.user.email);
+      dismiss(); showPill(r.data.user.email); syncTier(r.data.user.id); cloudBoot(r.data.user.id); toast('Welcome back, '+r.data.user.email);
     });
   };
 })();
 </script>
-<!-- /FTA AUTH v1.4 -->
+<!-- /FTA AUTH v1.5 -->
 </body>
 </html>
