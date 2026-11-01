@@ -1289,12 +1289,13 @@ function drawEquity(){var old=document.querySelectorAll('.eqsvg');for(var i=0;i<
  for(var i=0;i<all.length;i++){var el=all[i];
   if(el.childElementCount===0&&el.textContent.trim()==='Equity Curve'){el.insertAdjacentHTML('afterend',eqSVG())}}}
 var _show2=show;show=function(n){_show2(n);drawEquity()};
-<!-- FTA AUTH v1.5 (Supabase) — cloud login + tier + journal sync -->
+    </script>
+<!-- FTA AUTH v1.5.1 (Supabase) — single-path cloud login + tier + journal sync -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script>
 (function(){
   if(!window.supabase){ return; }
-  var sb = supabase.createClient('PASTE-YOUR-PROJECT-URL','PASTE-YOUR-ANON-KEY');
+  var sb = supabase.createClient('https://vgsacqpxoejjolftqgod.supabase.co','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZnc2FjcXB4b2Vqam9sZnRxZ29kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTExNDE1NjIsImV4cCI6MjEwNjcxNzU2Mn0.vWUj524y8rWIV0VN3pNlYMztaGlt4s1Nqy4ZJ0-n-7s');
   window.FTA_SB = sb;
   function el(id){ return document.getElementById(id); }
   function toast(t){
@@ -1304,6 +1305,7 @@ var _show2=show;show=function(n){_show2(n);drawEquity()};
     document.body.appendChild(d);
     setTimeout(function(){ d.remove(); },3500);
   }
+  function fail(t){ msg(t); toast(t); }
   function hasApp(){ return (typeof window.S!=='undefined') && (typeof window.save==='function'); }
   function setPad(on){ document.body.style.paddingTop = on?'48px':''; }
   function setLocalTier(t){
@@ -1409,20 +1411,20 @@ var _show2=show;show=function(n){_show2(n);drawEquity()};
   el('ftaAuthClose').onclick=dismiss;
   el('ftaSignOut').onclick=function(){
     sb.auth.signOut().then(function(){
-      window.FTA_USER=null; hidePill(); setLocalTier('free');
-      banner.style.display='block'; setPad(true); toast('Signed out.');
+      window.FTA_USER=null;
+      location.reload();
     });
   };
   el('ftaSignUp').onclick=function(){
     var email=el('ftaAuthEmail').value.trim();
     var pass=el('ftaAuthPass').value;
     var name=el('ftaAuthName').value.trim();
-    if(!email || pass.length<6){ msg('Enter a valid email and a password of at least 6 characters.'); return; }
+    if(!email || pass.length<6){ fail('Enter a valid email and a password of at least 6 characters.'); return; }
     msg('Creating account…');
     sb.auth.signUp({email:email,password:pass,options:{data:{full_name:name}}}).then(function(r){
-      if(r.error){ msg('Signup failed: '+r.error.message); return; }
+      if(r.error){ fail('Signup failed: '+r.error.message); return; }
       window.FTA_USER=r.data.user;
-      dismiss(); showPill(email); syncTier(r.data.user.id); cloudBoot(r.data.user.id); toast('Account created — signed in as '+email);
+      location.reload();
     });
   };
   el('ftaSignIn').onclick=function(){
@@ -1430,76 +1432,13 @@ var _show2=show;show=function(n){_show2(n);drawEquity()};
     var pass=el('ftaAuthPass').value;
     msg('Signing in…');
     sb.auth.signInWithPassword({email:email,password:pass}).then(function(r){
-      if(r.error){ msg('Sign-in failed: '+r.error.message); return; }
+      if(r.error){ fail('Sign-in failed: '+r.error.message); return; }
       window.FTA_USER=r.data.user;
-      dismiss(); showPill(r.data.user.email); syncTier(r.data.user.id); cloudBoot(r.data.user.id); toast('Welcome back, '+r.data.user.email);
+      location.reload();
     });
   };
 })();
 </script>
-<!-- /FTA AUTH v1.5 -->
-  <!-- FTA AUX v1 — Settings auth card + manual broker P/L -->
-<script>
-(function(){
-  var sb=window.FTA_SB; if(!sb || typeof window.S==='undefined'){ return; }
-  function el(id){ return document.getElementById(id); }
-  function toast(t){
-    var d=document.createElement('div'); d.textContent=t;
-    d.style.cssText='position:fixed;top:6px;left:10px;right:10px;z-index:9999;background:#0e1622;border:1px solid #2ecc8f;color:#2ecc8f;border-radius:10px;padding:10px;font:14px Roboto,sans-serif;text-align:center';
-    document.body.appendChild(d); setTimeout(function(){ d.remove(); },3500);
-  }
-  function latestData(t){ return (t&&t.versions&&t.versions.length)?t.versions[t.versions.length-1].data:t; }
-  var setScr=el('s-settings');
-  if(setScr && !el('ftaAuxCard')){
-    var card=document.createElement('div'); card.id='ftaAuxCard';
-    card.style.cssText='margin:12px 16px;padding:14px;border:1px solid #33415a;border-radius:12px;background:#141e2d;font:14px Roboto,sans-serif;color:#dbe4f0';
-    card.innerHTML='<div style="font-weight:700;margin-bottom:8px">☁️ Cloud account</div>'+
-      '<div id="ftaAuxWho" style="margin-bottom:10px;color:#8fa3bf"></div>'+
-      '<button id="ftaAuxBtn" style="width:100%;padding:10px;border:none;border-radius:8px;background:#2ecc8f;color:#06222f;font-weight:700"></button>';
-    setScr.appendChild(card);
-    var refresh=function(){
-      if(window.FTA_USER){ el('ftaAuxWho').textContent='Signed in as '+window.FTA_USER.email+' — journal syncs to cloud.'; el('ftaAuxBtn').textContent='Sign out'; }
-      else { el('ftaAuxWho').textContent='Not signed in — journal stays on this device only.'; el('ftaAuxBtn').textContent='Sign in / Create account'; }
-    };
-    el('ftaAuxBtn').onclick=function(){
-      if(window.FTA_USER){ sb.auth.signOut().then(function(){ window.FTA_USER=null; toast('Signed out.'); location.reload(); }); }
-      else { var box=el('ftaAuthBox'); if(box){ box.style.display='block'; } var ban=el('ftaAuthBanner'); if(ban){ ban.style.display='block'; } window.scrollTo(0,0); }
-    };
-    refresh(); setInterval(refresh,2000);
-  }
-  var jScr=el('s-journal');
-  if(jScr && !el('ftaPlCard')){
-    var pc=document.createElement('div'); pc.id='ftaPlCard';
-    pc.style.cssText='margin:12px 16px;padding:12px;border:1px solid #33415a;border-radius:12px;background:#141e2d;font:13px Roboto,sans-serif;color:#dbe4f0';
-    pc.innerHTML='<div style="font-weight:700;margin-bottom:6px">Broker P/L (USD)</div>'+
-      '<input id="ftaPlInput" type="number" step="0.01" placeholder="e.g. -1.40" style="width:100%;padding:10px;border-radius:8px;border:1px solid #33415a;background:#0e1622;color:#dbe4f0;margin-bottom:8px"/>'+
-      '<button id="ftaPlApply" style="width:100%;padding:9px;border:none;border-radius:8px;background:#4a8df8;color:#fff;font-weight:700">Apply to newest trade</button>'+
-      '<div style="margin-top:6px;color:#8fa3bf">This value is also auto-attached to each new trade you log while it is filled in.</div>';
-    jScr.insertBefore(pc, jScr.firstChild);
-    el('ftaPlApply').onclick=function(){
-      var v=parseFloat(el('ftaPlInput').value);
-      if(isNaN(v) || !S.trades || !S.trades.length){ toast('Enter a number first (e.g. -1.40)'); return; }
-      var d=latestData(S.trades[S.trades.length-1]); if(d){ d.pl=v; }
-      save(); go('journal'); toast('Newest trade P/L set to '+v.toFixed(2)+' USD');
-    };
-  }
-  var lastLen=(window.S&&S.trades)?S.trades.length:-1;
-  if(typeof window.save==='function'){
-    var origSave=window.save;
-    window.save=function(){
-      try{
-        var inp=el('ftaPlInput');
-        if(inp && S.trades && lastLen>=0 && S.trades.length>lastLen){
-          var v=parseFloat(inp.value);
-          if(!isNaN(v)){ var d=latestData(S.trades[S.trades.length-1]); if(d){ d.pl=v; } }
-        }
-        if(S.trades){ lastLen=S.trades.length; }
-      }catch(e){}
-      return origSave();
-    };
-  }
-})();
-</script>
-<!-- /FTA AUX v1 -->
+<!-- /FTA AUTH v1.5.1 -->
 </body>
 </html>
