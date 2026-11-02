@@ -1046,7 +1046,7 @@ function load(){try{return Object.assign({done:[],pro:false,ult:false,tier:'free
 function save(){try{localStorage.setItem('fta',JSON.stringify(S))}catch(e){}}
 const $=id=>document.getElementById(id);
 const latest=t=>t.versions[t.versions.length-1].data;
-const net=t=>{const d=latest(t);return(+d.pl)+(+d.swap)+(+d.comm)};
+const net=t=>{const d=latest(t);if(!d)return 0;if(d.plManual&&!isNaN(+d.pl)){return(+d.pl)+(+d.swap||0)+(+d.comm||0);}const p=String(d.pair||'').toUpperCase().replace(/[^A-Z]/g,'');const cs=/^(XAU|XAG)/.test(p)?100:/^(BTC|ETH|LTC|XRP|SOL|BNB)/.test(p)?1:100000;const o=+d.open||0,c=+d.close||0,l=+d.lots||0;const gross=(String(d.dir||'').toUpperCase()==='SELL'?(o-c):(c-o))*l*cs;return gross+(+d.swap||0)+(+d.comm||0);};
 const edited=t=>t.versions.length-1;
 function toast(m){const t=$('toast');t.textContent=m;t.style.display='block';setTimeout(()=>t.style.display='none',2500)}
 function show(n){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'));$('s-'+n).classList.add('on');
