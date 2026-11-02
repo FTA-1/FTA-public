@@ -1440,5 +1440,29 @@ var _show2=show;show=function(n){_show2(n);drawEquity()};
 })();
 </script>
 <!-- /FTA AUTH v1.5.1 -->
+<!-- FTA PLFIX v1 — broker-accurate stored pl -->
+<script>
+(function(){
+  function cs(p){p=String(p||'').toUpperCase().replace(/[^A-Z]/g,'');return /^(XAU|XAG)/.test(p)?100:/^(BTC|ETH|LTC|XRP|SOL|BNB)/.test(p)?1:100000;}
+  function calc(d){if(!d)return 0;var o=+d.open||0,c=+d.close||0,l=+d.lots||0;var g=(String(d.dir||'').toUpperCase()==='SELL'?(o-c):(c-o))*l*cs(d.pair);return g+(+d.swap||0)+(+d.comm||0);}
+  function fixAll(){
+    if(typeof window.S==='undefined'||!S.trades)return false;
+    var ch=false;
+    S.trades.forEach(function(t){
+      var d=(t&&t.versions&&t.versions.length)?t.versions[t.versions.length-1].data:t;
+      if(d&&!d.plManual){var v=calc(d);if(Math.abs((+d.pl||0)-v)>0.0001){d.pl=v;ch=true;}}
+    });
+    return ch;
+  }
+  function repaint(){ try{ renderDash(); renderJournal(); renderStats(); }catch(e){} }
+  function run(){ if(fixAll()&&typeof window.save==='function'){ save(); repaint(); } }
+  setTimeout(run,800); setTimeout(run,2500);
+  if(typeof window.save==='function'){
+    var orig=window.save;
+    window.save=function(){ try{ fixAll(); }catch(e){} return orig(); };
+  }
+})();
+</script>
+<!-- /FTA PLFIX v1 -->
 </body>
 </html>
