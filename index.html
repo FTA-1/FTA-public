@@ -1440,17 +1440,31 @@ var _show2=show;show=function(n){_show2(n);drawEquity()};
 })();
 </script>
 <!-- /FTA AUTH v1.5.1 -->
-<!-- FTA PLFIX v1 — broker-accurate stored pl -->
+  <!-- FTA PLFIX v2 — broker-accurate stored pl (multi-key) -->
 <script>
 (function(){
-  function cs(p){p=String(p||'').toUpperCase().replace(/[^A-Z]/g,'');return /^(XAU|XAG)/.test(p)?100:/^(BTC|ETH|LTC|XRP|SOL|BNB)/.test(p)?1:100000;}
-  function calc(d){if(!d)return 0;var o=+d.open||0,c=+d.close||0,l=+d.lots||0;var g=(String(d.dir||'').toUpperCase()==='SELL'?(o-c):(c-o))*l*cs(d.pair);return g+(+d.swap||0)+(+d.comm||0);}
+  function num(x){ x=parseFloat(x); return isNaN(x)?0:x; }
+  function dataOf(t){ return (t&&t.versions&&t.versions.length)?t.versions[t.versions.length-1].data:(t||{}); }
+  function calc(t){
+    var q=dataOf(t);
+    var o=num(q.open!==undefined?q.open:(q.op!==undefined?q.op:(q.entry!==undefined?q.entry:q.open_price)));
+    var c=num(q.close!==undefined?q.close:(q.cl!==undefined?q.cl:(q.exit!==undefined?q.exit:q.close_price)));
+    var l=num(q.lots!==undefined?q.lots:(q.vol!==undefined?q.vol:q.volume));
+    var pair=String(q.pair||q.symbol||q.inst||q.instrument||'').toUpperCase().replace(/[^A-Z]/g,'');
+    var dir=String(q.dir||q.direction||q.type||q.side||'').toUpperCase();
+    var cs=/^(XAU|XAG)/.test(pair)?100:/^(BTC|ETH|LTC|XRP|SOL|BNB)/.test(pair)?1:100000;
+    var g=(dir==='SELL'?(o-c):(c-o))*l*cs;
+    return g+num(q.swap)+num(q.comm!==undefined?q.comm:q.commission);
+  }
   function fixAll(){
     if(typeof window.S==='undefined'||!S.trades)return false;
     var ch=false;
     S.trades.forEach(function(t){
-      var d=(t&&t.versions&&t.versions.length)?t.versions[t.versions.length-1].data:t;
-      if(d&&!d.plManual){var v=calc(d);if(Math.abs((+d.pl||0)-v)>0.0001){d.pl=v;ch=true;}}
+      var d=dataOf(t);
+      if(d&&!(d.plManual)){
+        var v=calc(t);
+        if(Math.abs(num(d.pl)-v)>0.0001||Math.abs(num(t.pl)-v)>0.0001){ d.pl=v; t.pl=v; ch=true; }
+      }
     });
     return ch;
   }
@@ -1463,6 +1477,6 @@ var _show2=show;show=function(n){_show2(n);drawEquity()};
   }
 })();
 </script>
-<!-- /FTA PLFIX v1 -->
+<!-- /FTA PLFIX v2 -->
 </body>
 </html>
