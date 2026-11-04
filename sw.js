@@ -1,14 +1,22 @@
-const CACHE='fta-v1';
-const CORE=['./index.html','./manifest.json','./icon.svg','./privacy.html'];
-self.addEventListener('install',e=>{e.waitUntil(caches.open(CACHE).then(c=>c.addAll(CORE)));self.skipWaiting()});
-self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==CACHE).map(k=>caches.delete(k)))));self.clients.claim()});
-self.addEventListener('fetch',e=>{
- if(e.request.method!=='GET')return;
- const url=new URL(e.request.url);
- if(url.origin!==location.origin)return;
- if(e.request.mode==='navigate'){
-  e.respondWith(fetch(e.request).then(r=>{const cp=r.clone();caches.open(CACHE).then(c=>c.put('./index.html',cp));return r}).catch(()=>caches.match('./index.html')));
-  return;
- }
- e.respondWith(caches.match(e.request).then(hit=>hit||fetch(e.request).then(r=>{const cp=r.clone();caches.open(CACHE).then(c=>c.put(e.request,cp));return r})));
+/* FTA sw v2 — network-first for pages, cache-first for assets */
+const CACHE='fta-v2';
+self.addEventListener('install',function(e){ self.skipWaiting(); });
+self.addEventListener('activate',function(e){
+  e.waitUntil(caches.keys().then(function(ks){
+    return Promise.all(ks.filter(function(k){ return k!==CACHE; }).map(function(k){ return caches.delete(k); }));
+  }).then(function(){ return self.clients.claim(); }));
+});
+self.addEventListener('fetch',function(e){
+  var req=e.request;
+  if(req.mode==='navigate'){
+    e.respondWith(fetch(req).then(function(res){
+      var cp=res.clone(); caches.open(CACHE).then(function(c){ c.put(req,cp); }); return res;
+    }).catch(function(){ return caches.match(req); }));
+    return;
+  }
+  e.respondWith(caches.match(req).then(function(hit){
+    return hit || fetch(req).then(function(res){
+      var cp=res.clone(); caches.open(CACHE).then(function(c){ c.put(req,cp); }); return res;
+    });
+  }));
 });
