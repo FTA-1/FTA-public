@@ -1440,5 +1440,33 @@ var _show2=show;show=function(n){_show2(n);drawEquity()};
 })();
 </script>
 <!-- /FTA AUTH v1.5.1 -->
+  <!-- FTA DEL v1 — in-app account deletion (E3) -->
+<script>
+(function(){
+  var sb=window.FTA_SB; if(!sb){ return; }
+  function el(id){ return document.getElementById(id); }
+  var setScr=el('s-settings'); if(!setScr || el('ftaDelCard')){ return; }
+  var card=document.createElement('div'); card.id='ftaDelCard';
+  card.style.cssText='margin:12px 16px;padding:14px;border:1px solid #7f1d1d;border-radius:12px;background:#1a0e12;font:14px Roboto,sans-serif;color:#fca5a5';
+  card.innerHTML='<div style="font-weight:700;margin-bottom:6px">⚠️ Delete my account & data</div>'+
+   '<div style="margin-bottom:10px;color:#d1d5db">Permanently deletes your cloud account, profile and all synced journal trades, and erases local data. Cannot be undone.</div>'+
+   '<button id="ftaDelBtn" style="width:100%;padding:10px;border:none;border-radius:8px;background:#dc2626;color:#fff;font-weight:700">Delete my account</button>';
+  setScr.appendChild(card);
+  el('ftaDelBtn').onclick=function(){
+    if(!window.FTA_USER){ alert('Sign in first. Guest data can be erased with RESET PROGRESS.'); return; }
+    if(!confirm('Delete your account and ALL cloud data permanently?')){ return; }
+    var t=prompt('Type DELETE to confirm:');
+    if(t!=='DELETE'){ return; }
+    var b=el('ftaDelBtn'); b.disabled=true; b.textContent='Deleting…';
+    sb.functions.invoke('delete-my-account').then(function(r){
+      if(r.error){ alert('Deletion failed: '+r.error.message); b.disabled=false; b.textContent='Delete my account'; return; }
+      try{ localStorage.removeItem('fta'); }catch(e){}
+      alert('Account and data deleted. The app restarts as guest.');
+      location.reload();
+    });
+  };
+})();
+</script>
+<!-- /FTA DEL v1 -->
 </body>
 </html>
