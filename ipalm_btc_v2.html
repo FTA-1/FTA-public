@@ -62,7 +62,7 @@ li{margin:4px 0}
 <li>G3 FVG: three-candle gap aligned with displacement; width ≥0.04×M5 ATR; expires after twelve completed M5 candles; invalidated by a close through its far edge.</li>
 <li>G4 confirmation: completed M5 trades into the FVG and closes beyond its midpoint in trade direction; entry at next candle open, window two candles, otherwise skip.</li>
 <li>G5 conviction: confirmation close beyond prior close AND candle volume ≥1.2× 20-candle average volume.</li>
-<li>G6 geometry: stop beyond sweep extreme plus 0.08×M5 ATR; target 2R; skip if room to opposing M15 swing below 2R (2.5R counter-trend).</li>
+<li>G6 geometry: stop beyond the FVG far edge plus 0.08×M5 ATR, with a volatility floor of 0.4×M5 ATR; target 2R; skip if room to opposing M15 swing below 2R (2.5R counter-trend).</li>
 <li>G7 discipline: one open BTCUSD trade at a time; max three trades/day; stop after two consecutive losses; daily loss stop 1.5% of start-of-day equity. Track these manually: this browser dashboard cannot see your Exness positions or account P/L.</li>
 </ul></div>
 <div class="card small">Educational decision-support only, not an automated trading bot. Data feed: Binance BTC/USDT, not Exness BTCUSD. Check the Exness live quote, spread, contract specification, margin and order volume before every trade. If no complete setup is detected, no trade is the correct result. Historical backtest results, when shown, do not guarantee future performance.</div>
@@ -132,7 +132,12 @@ function scan(){
   fun.conf++;
   var e=m+1;
   if(e>=cs.length){watch={dir:dir,zone:zone,formed:formed,ext:ext,stage:'pending',m:m};last={dir:dir,stage:6};continue;}
-  var entry=cs[e].o,stop=dir==='bull'?ext-0.08*a5:ext+0.08*a5,R=Math.abs(entry-stop),target=dir==='bull'?entry+2*R:entry-2*R;
+var entry=cs[e].o;
+  var stop=dir==='bull'?zone[0]-0.08*a5:zone[1]+0.08*a5;
+  var R=Math.abs(entry-stop);
+  var Rmin=0.4*a5;
+  if(R<Rmin){stop=dir==='bull'?entry-Rmin:entry+Rmin;R=Rmin;}
+  var target=dir==='bull'?entry+2*R:entry-2*R;
   var roomPx=1e18;
   for(var s3=0;s3<sw15.length;s3++){var w3=sw15[s3];if(w3.i+2>e)break;
    if(dir==='bull'&&w3.side==='high'&&w3.px>entry)roomPx=Math.min(roomPx,w3.px-entry);
