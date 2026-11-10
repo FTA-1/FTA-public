@@ -19,13 +19,13 @@ input,select{background:#0e1622;color:#dbe4f0;border:1px solid #33415a;border-ra
 label{font-size:12px;color:#8fa3bf}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .small{font-size:12px;color:#8fa3bf}
-#watch{border-color:#fbbf24}#setup{border-color:#2ecc8f}
+#watch{border-color:#fbbf24}#setup{border-color:#2ecc8f}#signal{border-color:#4a8df8}
 li{margin:4px 0}
 </style>
 </head>
 <body>
 <h1>IPALM-BTC v2.0 — M5 Scalper Edition</h1>
-<p class="sub">M15 liquidity sweep → M5 displacement → M5 FVG retest → M5 confirmation · two-layer output (WATCH + SETUP)</p>
+<p class="sub">M15 liquidity sweep → M5 displacement → M5 FVG retest → M5 confirmation · WATCH + SETUP + LIVE SIGNAL</p>
 <div class="card"><div id="feed" class="warn">LOADING DATA — fetching market candles. No trade recommendation is active yet.</div>
 <div class="row"><span>Reference BTC price</span><b id="px">—</b></div>
 <div class="row"><span>H1 trend context (EMA50/200)</span><b id="bias">—</b></div>
@@ -36,8 +36,12 @@ li{margin:4px 0}
 <div class="card" id="gates"></div>
 <h2>L1 — WATCH zone</h2>
 <div class="card" id="watch"><span class="wait">No active watch zone.</span></div>
+<h2>L2a — LIVE SIGNAL</h2>
+<div class="card" id="signal"><span class="wait">No live signal. Silence is protection — the engine speaks only with full confluence.</span></div>
 <h2>L2 — Trade plan (indicative only)</h2>
 <div class="card" id="setup"><span class="wait">Sizing appears only when a complete setup exists. If 0.01 lot risks more than the selected cap, the dashboard must say SKIP TRADE.</span></div>
+<h2>Recent signals</h2>
+<div class="card" id="siglist"><span class="wait">—</span></div>
 <h2>L3 — Gate funnel (loaded window)</h2>
 <div class="card" id="funnel"><span class="wait">—</span></div>
 <h2>L4 — Backtest</h2>
@@ -52,7 +56,7 @@ li{margin:4px 0}
 <p class="small">Risk selector allows at most 5%. Contract size 1 means theoretical price P/L ≈ price movement × lots, before spread, slippage, swap or other costs. This does not verify Exness execution or guarantee the stop loss fills at its requested price.</p>
 <button id="rf">Refresh market data</button>
 <button class="sec" id="rs">Reset setup display</button>
-<h2>Exact rules implemented (v2.0)</h2>
+<h2>Exact rules implemented (v2.2)</h2>
 <div class="card small"><ul>
 <li>C1 regime: M5 ATR(14) between 0.6× and 3.0× its 96-candle median; outside = no trade.</li>
 <li>C2 depth: ≥200 M5, ≥200 M15, ≥100 H1 completed candles loaded.</li>
@@ -63,11 +67,12 @@ li{margin:4px 0}
 <li>G4 confirmation: completed M5 trades into the FVG and closes beyond its midpoint in trade direction; entry at next candle open, window two candles, otherwise skip.</li>
 <li>G5 conviction: confirmation close beyond prior close AND candle volume ≥1.2× 20-candle average volume.</li>
 <li>G6 geometry: stop beyond the FVG far edge plus 0.08×M5 ATR, with a volatility floor of 0.4×M5 ATR; target 2R; skip if room to opposing M15 swing below 2R (2.5R counter-trend).</li>
+<li>Dedupe: each reclaim, displacement, FVG, confirmation and entry candle counts once — funnel and signals show unique candidates only.</li>
 <li>G7 discipline: one open BTCUSD trade at a time; max three trades/day; stop after two consecutive losses; daily loss stop 1.5% of start-of-day equity. Track these manually: this browser dashboard cannot see your Exness positions or account P/L.</li>
 </ul></div>
-<div class="card small">Educational decision-support only, not an automated trading bot. Data feed: Binance BTC/USDT, not Exness BTCUSD. Check the Exness live quote, spread, contract specification, margin and order volume before every trade. If no complete setup is detected, no trade is the correct result. Historical backtest results, when shown, do not guarantee future performance.</div>
+<div class="card small">Educational decision-support only, not an automated trading bot. Data feed: Binance BTC/USDT mirrors with Bybit fallback, not Exness BTCUSD. Check the Exness live quote, spread, contract specification, margin and order volume before every trade. If no complete setup is detected, no trade is the correct result. Historical backtest results, when shown, do not guarantee future performance. Live BUY/SELL banners display the completed rule chain for education; they are not orders, not automated trading, and not financial advice.</div>
 <script>
-var M5=[],M15=[],H1=[],RES=null;
+var M5=[],M15=[],H1=[],RES=null,LASTSIG='';
 var $=function(id){return document.getElementById(id);};
 var FEEDS=['https://api.binance.com','https://api1.binance.com','https://api2.binance.com','https://api3.binance.com','https://data-api.binance.vision'];
 var FEEDNAME='—';
@@ -79,6 +84,8 @@ function emaLast(vals,p){var k=2/(p+1),e=vals[0];for(var i=1;i<vals.length;i++)e
 function med(a){var b=a.slice().sort(function(x,y){return x-y;});return b[b.length>>1];}
 function swings(cs){var o=[];for(var i=2;i<cs.length-2;i++){var h=true,l=true;for(var j=1;j<=2;j++){if(cs[i].h<=cs[i-j].h||cs[i].h<=cs[i+j].h)h=false;if(cs[i].l>=cs[i-j].l||cs[i].l>=cs[i+j].l)l=false;}if(h)o.push({i:i,px:cs[i].h,side:'high'});if(l)o.push({i:i,px:cs[i].l,side:'low'});}return o;}
 function volSMA(cs,m){var s=0,n=0;for(var i=Math.max(0,m-20);i<m;i++){s+=cs[i].v;n++;}return n?s/n:1;}
+function toast(t,col){var d=document.createElement('div');d.textContent=t;d.style.cssText='position:fixed;top:8px;left:10px;right:10px;z-index:99;background:#0e1622;border:2px solid '+(col||'#2ecc8f')+';color:'+(col||'#2ecc8f')+';border-radius:10px;padding:12px;font:15px Roboto,sans-serif;text-align:center;font-weight:700';document.body.appendChild(d);setTimeout(function(){d.remove();},6000);}
+function sizeIt(entry,stop){var bal=+$('bal').value||0,cap=+$('cap').value||1,csz=+$('cs').value||1;var R=Math.abs(entry-stop),perLot=R*csz,lots=Math.floor((bal*cap/100/perLot)/0.01)*0.01;return{lots:lots,R:R,cap:cap};}
 function scan(){
  var cs=M5.slice(0,M5.length-1);
  var a5=atr(cs,14);
@@ -92,6 +99,7 @@ function scan(){
  var depthOk=cs.length>=200&&M15.length>=200&&H1.length>=100;
  var fun={sweep:0,reclaim:0,disp:0,fvg:0,retest:0,conf:0,room:0,setup:0};
  var setups=[],watch=null,last=null;
+ var seenJ={},seenD={},seenF={},seenR={},seenM={},seenE={};
  if(regOk&&depthOk){
  for(var i=4;i<cs.length-3;i++){
   var c=cs[i],lvl=0,dir=null;
@@ -100,7 +108,7 @@ function scan(){
    else if(w.side==='low'&&c.l<w.px){lvl=w.px;dir='bull';}}
   if(!dir)continue;fun.sweep++;
   var j=-1;for(var q=i;q<=i+4&&q<cs.length;q++){if(dir==='bear'?cs[q].c<lvl:cs[q].c>lvl){j=q;break;}}
-  if(j<0)continue;fun.reclaim++;
+  if(j<0)continue;if(seenJ[j])continue;seenJ[j]=1;fun.reclaim++;
   var ext=dir==='bear'?Math.max(c.h,cs[j].h):Math.min(c.l,cs[j].l);
   var d=-1;
   for(var q2=j;q2<=j+2&&q2<cs.length;q2++){var k2=cs[q2],body=Math.abs(k2.c-k2.o),rng=(k2.h-k2.l)||1e-9;
@@ -113,13 +121,13 @@ function scan(){
      if(dir==='bull'&&w5.side==='high'&&k2.c>w5.px)brk=true;
      if(dir==='bear'&&w5.side==='low'&&k2.c<w5.px)brk=true;}
     if(brk){d=q2;break;}}}
-  if(d<0)continue;fun.disp++;
+  if(d<0)continue;if(seenD[d])continue;seenD[d]=1;fun.disp++;
   var zone=null,formed=-1,cb=[[d-1,d,d+1],[d,d+1,d+2]];
   for(var x=0;x<2;x++){var A=cb[x][0],C=cb[x][2];
    if(A<0||C>=cs.length)continue;
    if(dir==='bull'&&cs[C].l>cs[A].h&&(cs[C].l-cs[A].h)>=0.04*a5){zone=[cs[A].h,cs[C].l];formed=C;break;}
    if(dir==='bear'&&cs[C].h<cs[A].l&&(cs[A].l-cs[C].h)>=0.04*a5){zone=[cs[C].h,cs[A].l];formed=C;break;}}
-  if(!zone)continue;fun.fvg++;
+  if(!zone)continue;if(seenF[formed])continue;seenF[formed]=1;fun.fvg++;
   var mid=(zone[0]+zone[1])/2,rt=false,m=-1,inv=false;
   for(var q3=formed+1;q3<=formed+12&&q3<cs.length;q3++){
    if(dir==='bull'?cs[q3].c<zone[0]:cs[q3].c>zone[1]){inv=true;break;}
@@ -127,12 +135,12 @@ function scan(){
    if(rt&&(dir==='bull'?(cs[q3].l<=zone[1]&&cs[q3].c>mid):(cs[q3].h>=zone[0]&&cs[q3].c<mid))
      &&(dir==='bull'?cs[q3].c>cs[q3-1].c:cs[q3].c<cs[q3-1].c)
      &&cs[q3].v>=1.2*volSMA(cs,q3)){m=q3;break;}}
-  if(inv||!rt)continue;fun.retest++;
+  if(inv||!rt)continue;if(!seenR[formed]){seenR[formed]=1;fun.retest++;}
   if(m<0){if(formed+12>=cs.length-1)watch={dir:dir,zone:zone,formed:formed,ext:ext,stage:'await'};continue;}
-  fun.conf++;
+  if(seenM[m])continue;seenM[m]=1;fun.conf++;
   var e=m+1;
   if(e>=cs.length){watch={dir:dir,zone:zone,formed:formed,ext:ext,stage:'pending',m:m};last={dir:dir,stage:6};continue;}
-var entry=cs[e].o;
+  var entry=cs[e].o;
   var stop=dir==='bull'?zone[0]-0.08*a5:zone[1]+0.08*a5;
   var R=Math.abs(entry-stop);
   var Rmin=0.4*a5;
@@ -143,12 +151,13 @@ var entry=cs[e].o;
    if(dir==='bull'&&w3.side==='high'&&w3.px>entry)roomPx=Math.min(roomPx,w3.px-entry);
    if(dir==='bear'&&w3.side==='low'&&w3.px<entry)roomPx=Math.min(roomPx,entry-w3.px);}
   var needR=(biasSide&&biasSide!==dir)?2.5:2;
+  if(seenE[e])continue;seenE[e]=1;
   if(roomPx<needR*R)continue;fun.room++;
   var out='expired';
   for(var q4=e;q4<Math.min(e+48,cs.length);q4++){
    if(dir==='bull'?cs[q4].l<=stop:cs[q4].h>=stop){out='stopped';break;}
    if(dir==='bull'?cs[q4].h>=target:cs[q4].l<=target){out='hit';break;}}
-  fun.setup++;setups.push({t:cs[e].t,dir:dir,entry:entry,stop:stop,target:target,out:out});
+  fun.setup++;setups.push({t:cs[e].t,dir:dir,entry:entry,stop:stop,target:target,out:out,e:e});
   last={dir:dir,stage:7,entry:entry,stop:stop,target:target};
  }}
  return {fun:fun,setups:setups,watch:watch,last:last,a5:a5,m96:m96,biasSide:biasSide,regOk:regOk,depthOk:depthOk,n:cs.length};
@@ -157,6 +166,7 @@ function rowG(k,v,cls){return '<div class="row"><span>'+k+'</span><b class="'+cl
 function render(){
  RES=scan();
  var r=RES;
+ var cs=M5.slice(0,M5.length-1);
  $('feed').textContent='Live — '+r.n+' completed M5 candles via '+FEEDNAME+'. Indicative output only.';
  $('px').textContent=M5.length?M5[M5.length-1].c.toFixed(2):'—';
  $('bias').textContent=r.biasSide?('H1 '+r.biasSide.toUpperCase()):'—';
@@ -186,14 +196,36 @@ function render(){
   $('watch').innerHTML='<span class="wait">No active watch zone.</span>';
   $('setup').innerHTML='<span class="wait">Sizing appears only when a complete setup exists. If 0.01 lot risks more than the selected cap, the dashboard must say SKIP TRADE.</span>';
  }
+ var act=null;
+ r.setups.forEach(function(s){if(s.e>=cs.length-2){act=s;}});
+ if(act){
+  var X=Math.max(0,(act.e+2)-cs.length);
+  var sz=sizeIt(act.entry,act.stop);
+  var col=act.dir==='bull'?'#2ecc8f':'#f87171';
+  var sg='<div style="border:2px solid '+col+';border-radius:10px;padding:10px;margin-bottom:8px">'+
+   '<div style="font-size:20px;font-weight:900;color:'+col+'">'+(act.dir==='bull'?'BUY SIGNAL':'SELL SIGNAL')+' — BTCUSD</div>'+
+   '<div class="small">'+new Date(act.t).toUTCString()+' · indicative only · verify on Exness before acting</div></div>'+
+   '<div class="row"><span>Entry reference</span><b>'+act.entry.toFixed(2)+'</b></div>'+
+   '<div class="row"><span>Stop loss</span><b>'+act.stop.toFixed(2)+'</b></div>'+
+   '<div class="row"><span>Take profit (2R)</span><b>'+act.target.toFixed(2)+'</b></div>'+
+   (sz.lots<0.01?'<div class="row"><span>Volume</span><b class="bad">SKIP TRADE — 0.01 lot exceeds '+sz.cap+'% cap</b></div>':'<div class="row"><span>Volume</span><b class="ok">'+sz.lots.toFixed(2)+' lots</b></div>')+
+   '<div class="row"><span>Entry window closes in</span><b class="warn">'+X+' M5 candles</b></div>';
+  $('signal').innerHTML=sg;
+  var key=act.t+'_'+act.dir;
+  if(LASTSIG&&LASTSIG!==key){toast('NEW '+(act.dir==='bull'?'BUY':'SELL')+' SIGNAL @ '+act.entry.toFixed(2),col);}
+  LASTSIG=key;
+ }else{
+  $('signal').innerHTML='<span class="wait">No live signal. Silence is protection — the engine speaks only with full confluence.</span>';
+ }
+ $('siglist').innerHTML=r.setups.slice(-6).reverse().map(function(s){var st=(s.e>=cs.length-2)?'ACTIVE':s.out;return '<div class="row"><span>'+new Date(s.t).toUTCString().slice(5,22)+' '+(s.dir==='bull'?'BUY':'SELL')+' @'+s.entry.toFixed(0)+'</span><b class="'+(st==='hit'?'ok':st==='stopped'?'bad':st==='ACTIVE'?'warn':'wait')+'">'+st+'</b></div>';}).join('')||'<span class="wait">No signals in loaded window.</span>';
  $('funnel').innerHTML='<div class="row"><span>Sweeps (G1 events)</span><b>'+r.fun.sweep+'</b></div>'+
-  '<div class="row"><span>Reclaim ≤4×M5</span><b>'+r.fun.reclaim+'</b></div>'+
-  '<div class="row"><span>Displacement (G2)</span><b>'+r.fun.disp+'</b></div>'+
-  '<div class="row"><span>FVG (G3)</span><b>'+r.fun.fvg+'</b></div>'+
-  '<div class="row"><span>Retest (G4a)</span><b>'+r.fun.retest+'</b></div>'+
-  '<div class="row"><span>Confirmation (G4+G5)</span><b>'+r.fun.conf+'</b></div>'+
-  '<div class="row"><span>Room OK (G6)</span><b>'+r.fun.room+'</b></div>'+
-  '<div class="row"><span>SETUPS</span><b class="ok">'+r.fun.setup+'</b></div>';
+  '<div class="row"><span>Reclaim ≤4×M5 (unique)</span><b>'+r.fun.reclaim+'</b></div>'+
+  '<div class="row"><span>Displacement (G2, unique)</span><b>'+r.fun.disp+'</b></div>'+
+  '<div class="row"><span>FVG (G3, unique)</span><b>'+r.fun.fvg+'</b></div>'+
+  '<div class="row"><span>Retest (G4a, unique)</span><b>'+r.fun.retest+'</b></div>'+
+  '<div class="row"><span>Confirmation (G4+G5, unique)</span><b>'+r.fun.conf+'</b></div>'+
+  '<div class="row"><span>Room OK (G6, unique)</span><b>'+r.fun.room+'</b></div>'+
+  '<div class="row"><span>SETUPS (unique)</span><b class="ok">'+r.fun.setup+'</b></div>';
 }
 function plan(w){
  var bal=+$('bal').value||0,cap=+$('cap').value||1,lev=+$('lev').value||100,csz=+$('cs').value||1;
