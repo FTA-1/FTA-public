@@ -69,7 +69,11 @@ li{margin:4px 0}
 <script>
 var M5=[],M15=[],H1=[],RES=null;
 var $=function(id){return document.getElementById(id);};
-function kl(v,l){return fetch('https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval='+v+'&limit='+l).then(function(r){if(!r.ok)throw new Error('feed');return r.json();}).then(function(a){return a.map(function(k){return{t:k[0],o:+k[1],h:+k[2],l:+k[3],c:+k[4],v:+k[5]};});});}
+var FEEDS=['https://api.binance.com','https://api1.binance.com','https://api2.binance.com','https://api3.binance.com','https://data-api.binance.vision'];
+var FEEDNAME='—';
+function klB(host,v,l){return fetch(host+'/api/v3/klines?symbol=BTCUSDT&interval='+v+'&limit='+l).then(function(r){if(!r.ok)throw new Error('http'+r.status);return r.json();}).then(function(a){FEEDNAME=host.replace('https://','');return a.map(function(k){return{t:+k[0],o:+k[1],h:+k[2],l:+k[3],c:+k[4],v:+k[5]};});});}
+function klBybit(v,l){var iv=v==='M5'?'5':(v==='M15'?'15':'60');return fetch('https://api.bybit.com/v5/market/kline?category=spot&symbol=BTCUSDT&interval='+iv+'&limit='+l).then(function(r){if(!r.ok)throw new Error('http'+r.status);return r.json();}).then(function(j){FEEDNAME='bybit';return (j.result.list||[]).reverse().map(function(k){return{t:+k[0],o:+k[1],h:+k[2],l:+k[3],c:+k[4],v:+k[5]};});});}
+function kl(v,l){function go(ix){if(ix>=FEEDS.length)return klBybit(v,l);return klB(FEEDS[ix],v,l).catch(function(){return go(ix+1);});}return go(0);}
 function atr(cs,p){var n=cs.length;if(n<p+1)return 0;var s=0;for(var i=n-p;i<n;i++){var a=cs[i],b=cs[i-1];s+=Math.max(a.h-a.l,Math.abs(a.h-b.c),Math.abs(a.l-b.c));}return s/p;}
 function emaLast(vals,p){var k=2/(p+1),e=vals[0];for(var i=1;i<vals.length;i++)e=vals[i]*k+e*(1-k);return e;}
 function med(a){var b=a.slice().sort(function(x,y){return x-y;});return b[b.length>>1];}
@@ -148,7 +152,7 @@ function rowG(k,v,cls){return '<div class="row"><span>'+k+'</span><b class="'+cl
 function render(){
  RES=scan();
  var r=RES;
- $('feed').textContent='Live — '+r.n+' completed M5 candles loaded. Indicative output only.';
+ $('feed').textContent='Live — '+r.n+' completed M5 candles via '+FEEDNAME+'. Indicative output only.';
  $('px').textContent=M5.length?M5[M5.length-1].c.toFixed(2):'—';
  $('bias').textContent=r.biasSide?('H1 '+r.biasSide.toUpperCase()):'—';
  $('reg').textContent=r.regOk?'IN RANGE':'OUT OF RANGE (no trades)';
@@ -215,7 +219,7 @@ function backtest(){
 function fetchAll(){
  Promise.all([kl('M5',1000),kl('M15',400),kl('H1',250)]).then(function(a){
   M5=a[0];M15=a[1];H1=a[2];render();
- }).catch(function(){$('feed').textContent='FEED ERROR — Binance unreachable. No output shown.';$('feed').className='bad';});
+ }).catch(function(){$('feed').textContent='FEED ERROR — all endpoints unreachable (5 Binance mirrors + Bybit). No output shown.';$('feed').className='bad';});
 }
 function boundaryMs(){return 300000-(Date.now()%300000);}
 setInterval(function(){var s=Math.floor(boundaryMs()/1000);$('cd').textContent=Math.floor(s/60)+':'+String(s%60).padStart(2,'0');},1000);
