@@ -1512,5 +1512,55 @@ var _show2=show;show=function(n){_show2(n);drawEquity()};
 })();
 </script>
 <!-- /FTA VIS v2 -->
+  <!-- FTA PROG v1 — cloud learning-progress sync -->
+<script>
+(function(){
+  var sb=window.FTA_SB; if(!sb || typeof window.S==='undefined'){ return; }
+  function sc(){ if(S.scores&&typeof S.scores==='object')return S.scores; if(S.score&&typeof S.score==='object')return S.score; S.scores={}; return S.scores; }
+  function snap(){ return JSON.stringify({d:S.done||[],s:sc(),p:S.points||0}); }
+  function merge(cloud){
+    var ch=false;
+    if(cloud&&cloud.done&&cloud.done.length){ cloud.done.forEach(function(id){ if((S.done||[]).indexOf(id)<0){ S.done.push(id); ch=true; } }); }
+    if(cloud&&cloud.scores){ var L=sc(); Object.keys(cloud.scores).forEach(function(k){ var cv=+cloud.scores[k]||0, lv=+L[k]||0; if(cv>lv){ L[k]=cv; ch=true; } }); }
+    if(cloud&&(+cloud.points||0)>(+S.points||0)){ S.points=+cloud.points; ch=true; }
+    return ch;
+  }
+  function push(uid){
+    sb.from('profiles').update({progress:{done:S.done||[],scores:sc(),points:S.points||0}}).eq('id',uid).then(function(r){
+      if(!r.error){ last=snap(); }
+    });
+  }
+  var last='';
+  function boot(uid){
+    sb.from('profiles').select('progress').eq('id',uid).maybeSingle().then(function(r){
+      if(!r.error&&r.data&&r.data.progress){
+        var ch=merge(r.data.progress);
+        if(ch&&typeof window.save==='function'){ save(); try{ if(typeof renderDash==='function')renderDash(); if(typeof renderAcademy==='function')renderAcademy(); }catch(e){} }
+      }
+      push(uid);
+      setInterval(function(){
+        if(!window.FTA_USER){ return; }
+        var j=snap();
+        if(j!==last){ push(uid); }
+      },5000);
+    });
+  }
+  var t=setInterval(function(){ if(window.FTA_USER){ clearInterval(t); boot(window.FTA_USER.id); } },800);
+})();
+</script>
+<!-- /FTA PROG v1 -->
+  <!-- FTA FOUNDERS v1 — rules card in Settings -->
+<script>
+(function(){
+  var s=document.getElementById('s-settings'); if(!s||document.getElementById('ftaFoundersCard'))return;
+  var c=document.createElement('div'); c.id='ftaFoundersCard';
+  c.style.cssText='margin:12px 16px;padding:14px;border:1px solid #2ecc8f;border-radius:12px;background:linear-gradient(135deg,#1a2740,#0e1622);font:14px Roboto,sans-serif;color:#dbe4f0';
+  c.innerHTML='<div style="font-weight:700;margin-bottom:6px;color:#2ecc8f">🏆 Founder\'s Season</div>'+
+   '<div style="margin-bottom:10px">First 200 subscribers: <b>50% off for 3 months</b>. Top 3 graduates who complete the academy (66 lessons + 11 exams + final + 30 trades) on Ultimate for 30+ days win <b>Lifetime Pro + Ultimate free</b>. Season closes 30 days after launch.</div>'+
+   '<a href="https://fta-1.github.io/FTA-public/founders-season.html" target="_blank" style="display:inline-block;padding:8px 12px;background:#2ecc8f;color:#06222f;border-radius:8px;text-decoration:none;font-weight:700">Read full rules</a>';
+  s.appendChild(c);
+})();
+</script>
+<!-- /FTA FOUNDERS v1 -->
 </body>
 </html>
