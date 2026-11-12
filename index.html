@@ -1562,5 +1562,23 @@ var _show2=show;show=function(n){_show2(n);drawEquity()};
 })();
 </script>
 <!-- /FTA FOUNDERS v1 -->
+  <!-- FTA VIS GUARD — keep diagrams inside lessons only -->
+<script>
+(function(){
+  function clean(){
+    document.querySelectorAll('svg[viewBox="0 0 220 120"]').forEach(function(sv){
+      if(!sv.closest('#s-lesson')){
+        var p=sv.parentElement;
+        sv.remove();
+        if(p&&p.classList&&p.classList.contains('ftaVis')){p.remove();}
+      }
+    });
+  }
+  try{ new MutationObserver(function(){ clean(); }).observe(document.body,{childList:true,subtree:true}); }catch(e){}
+  setInterval(clean,1500);
+  clean();
+})();
+</script>
+<!-- /FTA VIS GUARD -->
 </body>
 </html>
