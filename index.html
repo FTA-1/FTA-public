@@ -173,7 +173,7 @@ canvas{display:none}
  <div class="plan" id="p_free" onclick="selPlan='free';paintPlans()"><h3>Free Tier</h3><p>First 10 lessons and basic journal (10 entries)</p><div class="price">Free</div></div>
  <div class="plan sel" id="p_pro" onclick="selPlan='pro';paintPlans()"><h3>Pro Monthly</h3><p>Full access to all 66 lessons, category exams, quizzes, unlimited journal, advanced stats & AI analytics</p><div class="price">$9.99 / Month</div></div>
  <div class="plan" id="p_ult" onclick="selPlan='ult';paintPlans()"><h3>Ultimate Pro</h3><p>Everything in Pro + live BTC/USD & XAU/USD signal dashboard + step-by-step strategy playbook</p><div class="price">$30 / Month</div></div>
- <div class="plan" id="p_life" onclick="selPlan='life';paintPlans()"><h3>Lifetime Access<span class="scarce">FIRST 100 FOUNDERS ONLY</span></h3><p>One-time payment for Pro forever (Ultimate available as add-on)</p><div class="price">$49.99 One-time</div></div>
+ <div class="plan" id="p_life" onclick="selPlan='life';paintPlans()"><h3>Lifetime Access<span class="scarce">FOUNDER PRICING — LIMITED LAUNCH OFFER</span></h3><p>One-time payment for Pro forever (Ultimate available as add-on)</p><div class="price">$49.99 One-time</div></div>
  <button class="btn blue" onclick="activate()">Subscribe Now</button>
  <p class="sub" style="text-align:center;padding-bottom:10px"><Payments processed securely by Google Play Billing. Manage or cancel anytime in Google Play → Subscriptions.</p>
 </div>
@@ -1474,18 +1474,43 @@ var _show2=show;show=function(n){_show2(n);drawEquity()};
 })();
 </script>
 <!-- /FTA DEL v1 -->
-  <!-- FTA FOUNDERS v1 — rules card in Settings -->
+<!-- FTA VIS v2 — lesson-only visuals + quiz layout fix -->
+<style>
+#s-quiz{padding-bottom:110px !important}
+#s-quiz button:last-of-type{position:static !important;margin-top:14px}
+</style>
 <script>
 (function(){
-  var s=document.getElementById('s-settings'); if(!s||document.getElementById('ftaFoundersCard'))return;
-  var c=document.createElement('div'); c.id='ftaFoundersCard';
-  c.style.cssText='margin:12px 16px;padding:14px;border:1px solid #2ecc8f;border-radius:12px;background:linear-gradient(135deg,#1a2740,#0e1622);font:14px Roboto,sans-serif;color:#dbe4f0';
-  c.innerHTML='<div style="font-weight:700;margin-bottom:6px;color:#2ecc8f">🏆 Founder\'s Season</div>'+
-   '<div style="margin-bottom:10px">First 200 subscribers: <b>50% off for 3 months</b>. Top 3 graduates who complete the academy (66 lessons + 11 exams + final + 30 trades) on Ultimate for 30+ days win <b>Lifetime Pro + Ultimate free</b>. Season closes 30 days after launch.</div>'+
-   '<a href="https://fta-1.github.io/FTA-public/founders-season.html" target="_blank" style="display:inline-block;padding:8px 12px;background:#2ecc8f;color:#06222f;border-radius:8px;text-decoration:none;font-weight:700">Read full rules</a>';
-  s.appendChild(c);
+  var SVG={
+   candle:'<svg viewBox="0 0 220 120" style="width:100%;background:#0e1622;border-radius:8px"><line x1="70" y1="10" x2="70" y2="35" stroke="#8fa3bf" stroke-width="2"/><rect x="55" y="35" width="30" height="45" fill="#2ecc8f"/><line x1="70" y1="80" x2="70" y2="110" stroke="#8fa3bf" stroke-width="2"/><text x="92" y="20" fill="#8fa3bf" font-size="9">upper wick</text><text x="92" y="60" fill="#2ecc8f" font-size="9">body (open to close)</text><text x="92" y="105" fill="#8fa3bf" font-size="9">lower wick</text></svg>',
+   hammer:'<svg viewBox="0 0 220 120" style="width:100%;background:#0e1622;border-radius:8px"><line x1="110" y1="25" x2="110" y2="18" stroke="#8fa3bf" stroke-width="2"/><rect x="95" y="25" width="30" height="22" fill="#2ecc8f"/><line x1="110" y1="47" x2="110" y2="105" stroke="#8fa3bf" stroke-width="2"/><text x="132" y="95" fill="#8fa3bf" font-size="9">long lower wick = sellers pushed, buyers rejected</text><text x="132" y="35" fill="#2ecc8f" font-size="9">small body near the top</text></svg>',
+   engulf:'<svg viewBox="0 0 220 120" style="width:100%;background:#0e1622;border-radius:8px"><rect x="55" y="40" width="24" height="35" fill="#f87171"/><rect x="90" y="25" width="30" height="60" fill="#2ecc8f"/><text x="128" y="50" fill="#8fa3bf" font-size="9">green body fully covers</text><text x="128" y="62" fill="#8fa3bf" font-size="9">prior red body =</text><text x="128" y="74" fill="#2ecc8f" font-size="9">bullish engulfing</text></svg>'
+  };
+  function pick(){
+    var s=document.getElementById('s-lesson'); if(!s)return null;
+    var t=(s.textContent||'').toLowerCase();
+    if(t.indexOf('hammer')>=0||t.indexOf('reversal')>=0)return SVG.hammer;
+    if(t.indexOf('engulf')>=0)return SVG.engulf;
+    if(t.indexOf('candle')>=0)return SVG.candle;
+    return null;
+  }
+  function place(){
+    document.querySelectorAll('.ftaVis').forEach(function(n){n.remove();});
+    var s=document.getElementById('s-lesson');
+    if(!s||!s.classList.contains('on'))return;
+    var svg=pick(); if(!svg)return;
+    var d=document.createElement('div'); d.className='ftaVis';
+    d.style.cssText='margin:10px 12px 0 12px';
+    d.innerHTML=svg;
+    s.insertBefore(d,s.firstChild);
+  }
+  if(typeof window.go==='function'){
+    var orig=window.go;
+    window.go=function(n){ var r=orig(n); setTimeout(place,60); return r; };
+  }
+  setTimeout(place,300);
 })();
 </script>
-<!-- /FTA FOUNDERS v1 -->
+<!-- /FTA VIS v2 -->
 </body>
 </html>
