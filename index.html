@@ -1230,10 +1230,6 @@ function renderSignals(){const un=S.ult;
  <div class="card" style="display:block"><div class="lt">📡 XAU/USD — <span class="chip sell">HOLD</span></div><div class="st">Entry 2,412 • TP 2,465 • SL 2,388 • MONITORING</div></div>
  <div class="card" style="display:block"><div class="lt">📘 Strategy Playbook</div><div class="st">Step-by-step breakdown of every signal</div></div></div>
  <div class="lockcard">🔒 ULTIMATE PRO — $30/month<br><span class="st">Live BTC/USD & XAU/USD signals + strategy playbook.<br>🏆 Top 3 students each season win this free.</span></div><button class="btn blue" onclick="go('plans')">View Plans</button>`}
-  /* ---- FTA DIAGRAMS ---- */
-const DIAGRAMS={15:'p4.svg',16:'p3.svg',17:'p2.svg',23:'p1.svg'};
-const _ol=openLesson;
-openLesson=function(id){const b=$('lbody');const before=b?b.innerHTML:'';_ol(id);const d=DIAGRAMS[id];if(d&&b&&$('lbody').innerHTML!==before){$('lbody').insertAdjacentHTML('beforeend','<div class="lockcard"><img src="https://fta-1.github.io/FTA-public/'+d+'" alt="FTA diagram" style="width:100%;border-radius:8px"></div>')}};
   /* ---- ACCOUNT CURRENCY ---- */
 S.cur=S.cur||'USD';S.rate=S.rate||1;
 const _st=saveTrade;saveTrade=function(){const n=S.trades.length;const r=_st();const t=S.trades[S.trades.length-1];if(t&&S.trades.length>n){const v=t.versions[t.versions.length-1];if(v){v.cur=S.cur||'USD';v.rate=S.rate||1}}return r};
