@@ -1234,14 +1234,6 @@ function renderSignals(){const un=S.ult;
 const DIAGRAMS={15:'p4.svg',16:'p3.svg',17:'p2.svg',23:'p1.svg'};
 const _ol=openLesson;
 openLesson=function(id){const b=$('lbody');const before=b?b.innerHTML:'';_ol(id);const d=DIAGRAMS[id];if(d&&b&&$('lbody').innerHTML!==before){$('lbody').insertAdjacentHTML('beforeend','<div class="lockcard"><img src="https://fta-1.github.io/FTA-public/'+d+'" alt="FTA diagram" style="width:100%;border-radius:8px"></div>')}};
-/* ---- DEV-ONLY UNLOCK (local file only — dead code on https) ---- */
-if(location.protocol!=='https:'){
- const dv=document.createElement('div');
- dv.className='devcard';
- dv.style.margin='16px';
- dv.innerHTML='🧪 <b>DEV TEST (local file only)</b><br><button class="btn outline" style="margin-top:8px" onclick="S.pro=true;S.ult=true;S.tier=\'ult\';save();location.reload()">UNLOCK EVERYTHING FOR TESTING</button> <button class="btn outline" style="margin-top:8px" onclick="S.pro=false;S.ult=false;S.tier=\'free\';save();location.reload()">BACK TO FREE</button>';
- const ss=$('s-settings');if(ss)ss.insertBefore(dv,ss.querySelector('.devcard'));
-}
   /* ---- ACCOUNT CURRENCY ---- */
 S.cur=S.cur||'USD';S.rate=S.rate||1;
 const _st=saveTrade;saveTrade=function(){const n=S.trades.length;const r=_st();const t=S.trades[S.trades.length-1];if(t&&S.trades.length>n){const v=t.versions[t.versions.length-1];if(v){v.cur=S.cur||'USD';v.rate=S.rate||1}}return r};
@@ -1251,14 +1243,7 @@ ss.insertBefore(d,ss.querySelector('.devcard'));
 const sel=$('f_cur'),rt=$('f_rate');sel.value=S.cur;rt.value=(S.rate===1?'':S.rate);
 sel.onchange=function(){S.cur=sel.value;if(S.cur==='USD')S.rate=1;save();toast('Account currency: '+S.cur)};
 rt.onchange=function(){const v=parseFloat(rt.value);S.rate=(S.cur==='USD')?1:(isFinite(v)&&v>0?v:1);save();toast('Rate saved: 1 USD = '+S.rate)};})();
-  
-/* ---------- SYSTEM ---------- */
-  /* ---- REVIEWER ACCESS CODE ---- */
-if(S.rev){S.pro=true;S.ult=true;S.tier='ult';save();}
-setInterval(function(){if(S.rev&&(S.tier!=='ult'||!S.pro)){S.pro=true;S.ult=true;S.tier='ult';save();}},2000);
-(function(){var n=0;const el=$('s-settings');if(!el)return;
-el.insertAdjacentHTML('beforeend','<p id="revtap" class="sub" style="padding:8px 16px;opacity:.35">v1.0.0 build 1</p>');
-el.addEventListener('click',function(e){if(e.target&&e.target.id==='revtap'){n++;if(n>=7){n=0;var c=prompt('Reviewer access code:');if(c==='FTA-GR-8842-2026'){S.rev=true;S.pro=true;S.ult=true;S.tier='ult';save();toast('Reviewer access granted');location.reload()}}}},true);})();
+   /*---------- SYSTEM----------*/
 function resetAll(){S={done:[],pro:false,ult:false,tier:'free',points:0,trades:[],scores:{},escores:{},epass:[]};save();renderAcademy();toast('Progress reset')}
 go('academy');
 </script>
