@@ -48,4 +48,29 @@ $('signal').className='signal panel '+setup.dir;$('signalTitle').textContent=set
 }
 async function refresh(){ $('status').textContent='Fetching closed Binance BTC/USDT candles…';try{const results=await Promise.all([candles('5m',300),candles('15m',300),candles('1h',100)]);data={m5:results[0],m15:results[1],h1:results[2]};$('status').textContent='Updated '+new Date().toLocaleString()+' — Binance reference feed, not Exness.';calc();}catch(e){$('status').textContent='Data error: '+e.message+'. Check connection and refresh.';hold('No verified data available. Do not trade from stale or missing data.');}}
 $('refresh').addEventListener('click',refresh);$('reset').addEventListener('click',()=>{hold('Display reset. Refresh data to evaluate the current setup.');['sBias','sSweep','sDisp','sFvg','sRetest','sM5','sRoom'].forEach(x=>status(x,'Waiting'));});['balance','risk','leverage','contract','minLot','lotStep'].forEach(id=>$(id).addEventListener('change',()=>{if(data.m5.length)calc();}));refresh();setInterval(refresh,300000);
-</script></body></html>
+</script>
+<!-- FTA GATE v1 — premium page entitlement check -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script>
+(function(){
+  document.documentElement.style.visibility='hidden';
+  function allow(){document.documentElement.style.visibility='';}
+  function deny(){location.replace('https://fta-1.github.io/FTA-public/lock.html');}
+  try{
+    var sb=supabase.createClient('https://vgsacqpxoejjolftqgod.supabase.co','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZnc2FjcXB4b2Vqam9sZnRxZ29kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTExNDE1NjIsImV4cCI6MjEwNjcxNzU2Mn0.vWUj524y8rWIV0VN3pNlYMztaGlt4s1Nqy4ZJ0-n-7s');
+    sb.auth.getSession().then(function(r){
+      var u=r.data&&r.data.session&&r.data.session.user;
+      if(!u){deny();return;}
+      sb.from('profiles').select('subscription_tier,subscription_expiry').eq('id',u.id).maybeSingle().then(function(p){
+        if(p.error){allow();return;}
+        var t=(p.data&&p.data.subscription_tier)||'free';
+        var exp=p.data&&p.data.subscription_expiry;
+        var ok=(t==='ultimate')&&(!exp||new Date(exp).getTime()>Date.now());
+        if(ok){allow();}else{deny();}
+      });
+    }).catch(deny);
+  }catch(e){deny();}
+})();
+</script>
+<!-- /FTA GATE v1 -->
+</body></html>
