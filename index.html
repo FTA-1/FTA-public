@@ -1576,5 +1576,23 @@ var _show2=show;show=function(n){_show2(n);drawEquity()};
 })();
 </script>
 <!-- /FTA HQ v1 -->
+  <!-- FTA NAME v1 — cloud name in dashboard greeting -->
+<script>
+(function(){
+  function setName(txt){var n=document.getElementById('d_name');if(n&&txt)n.textContent=txt;}
+  var t=setInterval(function(){
+    if(!window.FTA_SB||!window.FTA_USER)return;
+    clearInterval(t);
+    var u=window.FTA_USER;
+    var md=(u.user_metadata&&u.user_metadata.full_name)||'';
+    if(md){setName(md);return;}
+    window.FTA_SB.from('profiles').select('full_name').eq('id',u.id).maybeSingle().then(function(r){
+      if(!r.error&&r.data&&r.data.full_name){setName(r.data.full_name);}
+      else if(u.email){setName(u.email.split('@')[0]);}
+    });
+  },800);
+})();
+</script>
+<!-- /FTA NAME v1 -->
 </body>
 </html>
