@@ -76,7 +76,30 @@ input:focus{outline:none;border-color:var(--blue)}
 </style>
 </head>
 <body>
-
+<!-- FTA GATE v1 — premium page entitlement check -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script>
+(function(){
+  document.documentElement.style.visibility='hidden';
+  function allow(){document.documentElement.style.visibility='';}
+  function deny(){location.replace('https://fta-1.github.io/FTA-public/lock.html');}
+  try{
+    var sb=supabase.createClient('https://vgsacqpxoejjolftqgod.supabase.co','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZnc2FjcXB4b2Vqam9sZnRxZ29kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTExNDE1NjIsImV4cCI6MjEwNjcxNzU2Mn0.vWUj524y8rWIV0VN3pNlYMztaGlt4s1Nqy4ZJ0-n-7s');
+    sb.auth.getSession().then(function(r){
+      var u=r.data&&r.data.session&&r.data.session.user;
+      if(!u){deny();return;}
+      sb.from('profiles').select('subscription_tier,subscription_expiry').eq('id',u.id).maybeSingle().then(function(p){
+        if(p.error){allow();return;}
+        var t=(p.data&&p.data.subscription_tier)||'free';
+        var exp=p.data&&p.data.subscription_expiry;
+        var ok=(t==='ultimate')&&(!exp||new Date(exp).getTime()>Date.now());
+        if(ok){allow();}else{deny();}
+      });
+    }).catch(deny);
+  }catch(e){deny();}
+})();
+</script>
+<!-- /FTA GATE v1 -->
 <div class="header">
   <h1>XAUUSD LIVE SIGNAL DASHBOARD</h1>
   <p>SMC Liquidity Sweep + EMA Trend Rider | M5 candle-close signals</p>
@@ -856,29 +879,5 @@ startCountdown();
 // Auto-connect immediately using the free Binance feed — no key needed to see live signals.
 fetchAll(true).then(function () { scheduleAutoRefresh(); });
 </script>
-<!-- FTA GATE v1 — premium page entitlement check -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-<script>
-(function(){
-  document.documentElement.style.visibility='hidden';
-  function allow(){document.documentElement.style.visibility='';}
-  function deny(){location.replace('https://fta-1.github.io/FTA-public/lock.html');}
-  try{
-    var sb=supabase.createClient('https://vgsacqpxoejjolftqgod.supabase.co','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZnc2FjcXB4b2Vqam9sZnRxZ29kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTExNDE1NjIsImV4cCI6MjEwNjcxNzU2Mn0.vWUj524y8rWIV0VN3pNlYMztaGlt4s1Nqy4ZJ0-n-7s');
-    sb.auth.getSession().then(function(r){
-      var u=r.data&&r.data.session&&r.data.session.user;
-      if(!u){deny();return;}
-      sb.from('profiles').select('subscription_tier,subscription_expiry').eq('id',u.id).maybeSingle().then(function(p){
-        if(p.error){allow();return;}
-        var t=(p.data&&p.data.subscription_tier)||'free';
-        var exp=p.data&&p.data.subscription_expiry;
-        var ok=(t==='ultimate')&&(!exp||new Date(exp).getTime()>Date.now());
-        if(ok){allow();}else{deny();}
-      });
-    }).catch(deny);
-  }catch(e){deny();}
-})();
-</script>
-<!-- /FTA GATE v1 -->  
 </body>
 </html>
