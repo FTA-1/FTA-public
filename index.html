@@ -1192,10 +1192,20 @@ window.S=S; window.save=save; window.tierName=tierName; window.go=go;
   const token=res.details.purchaseToken;
   await res.complete('success');
   try{ if(pid==='lifetime_pro'){await svc.consume(token);}else{await svc.acknowledge(token);}}catch(e){}
-  if(pid==='ultimate_monthly'){S.pro=true;S.ult=true;S.tier='ult'}
-  else if(pid==='pro_monthly'){S.pro=true;S.ult=false;S.tier='pro'}
-  else{S.pro=true;S.ult=false;S.tier='life'}
-  save();if($('tier'))$('tier').textContent=tierName();toast('🎉 Welcome to '+tierName()+'!');go('dash');
+// Call our Edge Function to verify the purchase with Google
+    const { data, error } = await window.FTA_SB.functions.invoke('verify-purchase', {
+      body: { purchaseToken: token, productId: pid, userId: window.FTA_USER.id }
+    });
+
+    if (!error && data && data.success) {
+      // Pull the verified tier from DB
+      syncTier(window.FTA_USER.id);
+    } else {
+      toast('⚠ Payment verification failed. Contact support.');
+      console.error('Verification error:', error, data);
+    }
+
+   if($('tier'))$('tier').textContent=tierName();toast('🎉 Welcome to '+tierName()+'!');go('dash');
  }catch(e){toast('Payment cancelled or unavailable')}}
 async function restorePurchases(){
  try{
