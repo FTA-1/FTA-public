@@ -1181,32 +1181,90 @@ function activate(){
  const pid=selPlan==='pro'?'pro_monthly':(selPlan==='ult'?'ultimate_monthly':'lifetime_pro');
  buyViaPlay(pid)}
 window.S=S; window.save=save; window.tierName=tierName; window.go=go;
-  async function buyViaPlay(pid){
- try{
-  if(!window.getDigitalGoodsService){toast('📲 Subscriptions activate in the Play Store version');return}
-  const svc=await window.getDigitalGoodsService('https://play.google.com/billing');
-  const det=await svc.getDetails([pid]);
-  if(!det||!det.length){toast('⏳ Product not live yet — try after launch');return}
-  const req=new PaymentRequest([{supportedMethods:'https://play.google.com/billing',data:{sku:pid}}]);
-  const res=await req.show();
-  const token=res.details.purchaseToken;
-  await res.complete('success');
-  try{ if(pid==='lifetime_pro'){await svc.consume(token);}else{await svc.acknowledge(token);}}catch(e){}
-// Call our Edge Function to verify the purchase with Google
-    const { data, error } = await window.FTA_SB.functions.invoke('verify-purchase', {
-      body: { purchaseToken: token, productId: pid, userId: window.FTA_USER.id }
-    });
 
-    if (!error && data && data.success) {
-      // Pull the verified tier from DB
-      syncTier(window.FTA_USER.id);
-    } else {
-      toast('⚠ Payment verification failed. Contact support.');
-      console.error('Verification error:', error, data);
+async function buyViaPlay(pid){
+  try {
+    if (!window.FTA_USER || !window.FTA_USER.id) {
+      toast('Please sign in before purchasing.');
+      return;
     }
 
-   if($('tier'))$('tier').textContent=tierName();toast('🎉 Welcome to '+tierName()+'!');go('dash');
- }catch(e){toast('Payment cancelled or unavailable')}}
+    if (!window.FTA_SB) {
+      toast('Account connection unavailable. Please try again.');
+      return;
+    }
+
+    if (!window.getDigitalGoodsService) {
+      toast('📲 Subscriptions activate in the Play Store version.');
+      return;
+    }
+
+    const svc = await window.getDigitalGoodsService(
+      'https://play.google.com/billing'
+    );
+
+    const det = await svc.getDetails([pid]);
+
+    if (!det || !det.length) {
+      toast('⏳ Product not available yet.');
+      return;
+    }
+
+    const req = new PaymentRequest(
+      [{
+        supportedMethods: 'https://play.google.com/billing',
+        data: { sku: pid }
+      }]
+    );
+
+    const res = await req.show();
+    const token = res.details && res.details.purchaseToken;
+
+    if (!token) {
+      toast('Purchase token missing. Contact support.');
+      return;
+    }
+
+    await res.complete('success');
+
+    // Server verifies the purchase and handles acknowledgement.
+    const { data, error } =
+      await window.FTA_SB.functions.invoke('verify-purchase', {
+        body: {
+          purchaseToken: token,
+          productId: pid
+        }
+      });
+
+    if (error || !data || !data.success) {
+      console.error('Purchase verification failed:', error, data);
+      toast('⚠ Verification failed. Do not purchase again yet. Contact support.');
+      return;
+    }
+
+    // Apply only the tier returned by the verified server response.
+    if (typeof S !== 'undefined') {
+      S.pro = true;
+      S.ult = data.tier === 'ultimate';
+      S.tier = data.tier === 'lifetime'
+        ? 'life'
+        : (data.tier === 'ultimate' ? 'ult' : 'pro');
+      save();
+    }
+
+    if ($('tier')) {
+      $('tier').textContent = tierName();
+    }
+
+    toast('🎉 Welcome to ' + tierName() + '!');
+    go('dash');
+
+  } catch (e) {
+    console.error('Purchase error:', e);
+    toast('Purchase cancelled or unavailable.');
+  }
+}
+
 async function restorePurchases(){
  try{
   if(!window.getDigitalGoodsService)return;
