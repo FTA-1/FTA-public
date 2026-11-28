@@ -1419,6 +1419,7 @@ var _show2=show;show=function(n){_show2(n);drawEquity()};
       if(!applied && (t==='pro'||t==='ultimate'||t==='lifetime')){ toast('Tier sync unavailable — report to dev'); }
     });
   }
+  window.FTA_SYNC_TIER = syncTier;
   var lastSyncJSON='';
   var pollerOn=false;
   function upsertTrades(list,uid,announce){
