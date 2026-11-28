@@ -1410,7 +1410,7 @@ var _show2=show;show=function(n){_show2(n);drawEquity()};
     return true;
   }
   function syncTier(uid){
-    sb.from('profiles').select('subscription_tier,subscription_expiry').eq('id',uid).maybeSingle().then(function(r){
+   return sb.from('profiles').select('subscription_tier,subscription_expiry').eq('id',uid).maybeSingle().then(function(r){
       if(r.error || !r.data){ return; }
       var t=r.data.subscription_tier||'free';
       var exp=r.data.subscription_expiry;
