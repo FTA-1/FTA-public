@@ -1265,17 +1265,52 @@ async function buyViaPlay(pid){
   }
 }
 
+
 async function restorePurchases(){
- try{
-  if(!window.getDigitalGoodsService)return;
-  const svc=await window.getDigitalGoodsService('https://play.google.com/billing');
-  const ps=await svc.listPurchases();
-  let pro=false,ult=false,life=false;
-ps.forEach(function(p){if(p.itemId==='pro_monthly')pro=true;if(p.itemId==='ultimate_monthly'){pro=true;ult=true}if(p.itemId==='lifetime_pro')life=true});
-S.pro=pro||life;S.ult=ult;S.tier=ult?'ult':(life?'life':(pro?'pro':'free'));save();
-  if($('tier'))$('tier').textContent=tierName();
- }catch(e){}}
-restorePurchases();
+  try {
+    if (!window.FTA_USER || !window.FTA_USER.id) return;
+    if (!window.getDigitalGoodsService) return;
+    if (!window.FTA_SB) return;
+
+    const svc = await window.getDigitalGoodsService(
+      'https://play.google.com/billing'
+    );
+
+    const purchases = await svc.listPurchases();
+
+    if (!purchases || !purchases.length) return;
+
+    let verified = 0;
+
+    for (const p of purchases) {
+      if (!p.purchaseToken || !p.itemId) continue;
+
+      const { data, error } =
+        await window.FTA_SB.functions.invoke('verify-purchase', {
+          body: {
+            purchaseToken: p.purchaseToken,
+            productId: p.itemId
+          }
+        });
+
+      if (!error && data && data.success) {
+        verified++;
+      } else {
+        console.error('Restore verification failed:', p.itemId, error, data);
+      }
+    }
+
+    if (verified > 0 && typeof window.FTA_SYNC_TIER === 'function') {
+      await window.FTA_SYNC_TIER(window.FTA_USER.id);
+      toast('✅ ' + verified + ' purchase(s) verified.');
+    }
+
+  } catch (e) {
+    console.error('Purchase restoration error:', e);
+    toast('Purchase restoration could not be completed.');
+  }
+}
+
 function renderRank(){const q=Object.values(S.scores);const e=Object.values(S.escores);
   const aq=q.length?q.reduce((a,b)=>a+b,0)/q.length:0;
  const ae=e.length?e.reduce((a,b)=>a+b,0)/e.length:0;
