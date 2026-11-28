@@ -1492,6 +1492,7 @@ var _show2=show;show=function(n){_show2(n);drawEquity()};
       showPill(r.data.session.user.email);
       syncTier(r.data.session.user.id);
       cloudBoot(r.data.session.user.id);
+      restorePurchases();
     } else {
       setLocalTier('free');
       banner.style.display='block';
